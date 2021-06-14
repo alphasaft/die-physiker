@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<units>
+    <unit name="time">s, sec, seconde, secondes, m, min, minutes, h, heure, heures</unit>
+    <unit name="distance">m</unit>
+    <unit name="volume">L</unit>
+
+    <compositeUnit name="speed">
+        <component exposant="1">distance</component>
+        <component exposant="-1">time</component>
+    </compositeUnit>
+
+    <unitShortcut symbol="C" for="electromagneticForce"/>
+</units>

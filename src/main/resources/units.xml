@@ -1,13 +1,38 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <units>
-    <unit name="time">s, sec, seconde, secondes, m, min, minutes, h, heure, heures</unit>
-    <unit name="distance">m</unit>
-    <unit name="volume">L</unit>
+    <unitGroup for="time">
+        <unit>
+            <name>heure, heures</name>
+            <symbol>h</symbol>
+            <flags strict="true"/>
+            <convertToSI>it*3600</convertToSI>
+        </unit>
 
-    <compositeUnit name="speed">
-        <component exposant="1">distance</component>
-        <component exposant="-1">time</component>
-    </compositeUnit>
+        <unit>
+            <name>minute, minutes</name>
+            <symbol>min, mins</symbol>
+            <flags strict="true"/>
+            <convertToSI>it*60</convertToSI>
+        </unit>
 
-    <unitShortcut symbol="C" for="electromagneticForce"/>
+        <unit>
+            <name>seconde, secondes</name>
+            <symbol>s, sec, secs</symbol>
+            <flags noSuperUnit="true"/>
+            <SI/>
+        </unit>
+    </unitGroup>
+
+    <unitGroup for="speed">
+        <alias>
+            <component name="distance" exposant="1" SIUnit="m"/>
+            <component name="time" exposant="-1" SIUnit="s"/>
+        </alias>
+    </unitGroup>
+
+    <unit for="distance">
+        <name>metre, metres</name>
+        <symbol>m</symbol>
+        <SI/>
+    </unit>
 </units>

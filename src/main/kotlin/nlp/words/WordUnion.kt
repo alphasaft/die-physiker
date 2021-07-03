@@ -1,28 +1,23 @@
 package nlp.words
 
+import dto.TokenList
+import dto.WordInstanceList
 import nlp.Consumed
-import nlp.WordList
-import tokenizing.TokenList
-import util.DslInitializer
-import util.MayBeInitializedByDsl
-import util.MayBeMutatedByDsl
 
 class WordUnion(
     components: List<Word>,
-    @MayBeInitializedByDsl override var name: String = "<not named>",
+    override var name: String,
 ) : Word {
-    @DslInitializer("name")
-    infix fun named(name: String) = apply { this.name = name }
 
-    private val components: List<Word> = components
-        .fold(listOf()) { acc, elem -> if (elem is WordUnion) acc + elem.components else acc.plusElement(elem) }
-
-    override fun consume(tokens: TokenList): Pair<Consumed, WordList>? {
-        for (word in components) {
-            word.consume(tokens)?.also { return it }
-        }
-        return null
+    private companion object Util {
+        fun flattenComponents(components: List<Word>): List<Word> = components
+            .fold(listOf()) { acc, comp -> if (comp is WordUnion) acc + comp.components else acc.plusElement(comp) }
     }
 
+    private val components: List<Word> = flattenComponents(components)
 
+    override fun consume(tokens: TokenList): Pair<Consumed, WordInstanceList>? {
+        for (word in components) word.consume(tokens)?.also { return it }
+        return null
+    }
 }

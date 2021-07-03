@@ -1,24 +1,20 @@
 package nlp.words
 
+import dto.TokenList
+import dto.WordInstance
+import dto.WordInstanceList
 import nlp.Consumed
-import nlp.WordList
 import nlp.overcomeResemblanceThreshold
 import nlp.resemblanceTo
-import tokenizing.TokenList
-import util.MayBeInitializedByDsl
-import util.DslInitializer
+
 
 class SimpleWord(
     override val name: String,
-    @MayBeInitializedByDsl private var forms: List<String> = listOf()
+    forms: List<String>
 ) : Word {
+    private val forms: List<String> = forms.map { it.toLowerCase() }
 
-    @DslInitializer("forms")
-    infix fun matching(forms: List<String>): SimpleWord = apply { this.forms = forms }
-    @DslInitializer("forms")
-    infix fun matching(form: String): SimpleWord = apply { this.forms = listOf(form) }
-
-    override fun consume(tokens: TokenList): Pair<Consumed, WordList>? {
+    override fun consume(tokens: TokenList): Pair<Consumed, WordInstanceList>? {
         val token = tokens[0]
         val mostResemblingForm = forms
             .map { it to it.resemblanceTo(token.value) }

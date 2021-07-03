@@ -1,8 +1,8 @@
-package tokenizing
+package dto
 
 import kotlin.math.min
 
-data class Token(
+class Token(
     val value: String,
     val type: String,
     val start: Int
@@ -17,5 +17,3 @@ data class Token(
         min(start, other.start)
     )
 }
-
-

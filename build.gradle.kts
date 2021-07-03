@@ -4,7 +4,7 @@ plugins {
     kotlin("jvm") version "1.4.32"
 }
 
-group = "me.hugo"
+group = "me.alphasaft"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -12,6 +12,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.redundent:kotlin-xml-builder:1.7.3")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.5.10")
     testImplementation(kotlin("test-junit"))
 }

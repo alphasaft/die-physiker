@@ -1,17 +1,16 @@
 package nlp
 
+import dto.TokenList
 import nlp.words.UnknownWord
 import nlp.words.Word
-import nlp.words.WordInstance
-import tokenizing.TokenList
-import util.DslFunction
-import util.DslScopeFunction
+import dto.WordInstance
+import dto.WordInstanceList
 
 
 class Corpus(vararg words: Word) {
     val words: List<Word> = words.toList().plusElement(UnknownWord)
 
-    fun match(tokens: TokenList): WordList {
+    fun match(tokens: TokenList): WordInstanceList {
         var remainingTokens = tokens
         val result = mutableListOf<WordInstance>()
         while (remainingTokens.isNotEmpty()) {
@@ -23,21 +22,5 @@ class Corpus(vararg words: Word) {
             }
         }
         return result
-    }
-
-    companion object DslSupport {
-        private val wordsStock = mutableListOf<Word>()
-
-        @DslScopeFunction
-        infix fun builtWith(init: DslSupport.() -> Unit): Corpus {
-            wordsStock.clear()
-            this.init()
-            return Corpus(*wordsStock.toTypedArray())
-        }
-
-        @DslFunction
-        operator fun Word.unaryMinus() {
-            wordsStock.add(this)
-        }
     }
 }

@@ -2,13 +2,14 @@ package nlp
 
 import nlp.words.UnknownWord
 import kotlin.math.max
-import nlp.words.WordInstance
+import dto.WordInstance
+
 
 // Easier to understand
-
 typealias Consumed = Int
 
-// Resembling
+
+// --- Resemblance analysis ---
 
 private fun recover(what: String, reference: String, startIndex: Int, referenceIndex: Int): Int {
     var currentIndex = startIndex
@@ -36,28 +37,23 @@ fun String.resemblanceTo(other: String): Double {
             thisIndex++
             otherIndex++
         } else if (indexOfCurrentOtherCharInRemainingThisInput == -1 || indexOfCurrentThisCharInRemainingOtherInput < indexOfCurrentOtherCharInRemainingThisInput) {
-            thisIndex = recover(this, other, thisIndex, otherIndex)
+            thisIndex = recover(what = this, reference = other, startIndex = thisIndex, referenceIndex = otherIndex)
         } else if (indexOfCurrentThisCharInRemainingOtherInput == -1 || indexOfCurrentOtherCharInRemainingThisInput <= indexOfCurrentThisCharInRemainingOtherInput) {
-            otherIndex = recover(other, this, otherIndex, thisIndex)
+            otherIndex = recover(what = other, reference = this, startIndex = otherIndex, referenceIndex = thisIndex)
         }
     }
 
     return identicalLettersCount.toDouble() / max(length, other.length)
 }
 
-private const val RESEMBLING_THRESHOLD = 0.7
+private const val RESEMBLANCE_THRESHOLD = 0.7
+
 infix fun String.resembles(other: String): Boolean {
     return this.resemblanceTo(other).overcomeResemblanceThreshold()
 }
 
 fun Double.overcomeResemblanceThreshold(): Boolean {
-    return this >= RESEMBLING_THRESHOLD
+    return this >= RESEMBLANCE_THRESHOLD
 }
 
 // WordList
-
-typealias WordList = List<WordInstance>
-
-fun WordList.removeUnknown(): WordList = this.filterNot { it.word is UnknownWord }
-val WordList.values get() = this.map { it.value }
-

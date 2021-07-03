@@ -1,6 +1,8 @@
 package tokenizing
 
 import util.normalize
+import dto.Token
+import dto.TokenList
 
 
 open class Tokenizer(private vararg val tokenModels: TokenModel) {

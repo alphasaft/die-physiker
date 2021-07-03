@@ -1,5 +1,6 @@
 package tokenizing
 
+import dto.Token
 
 class TokenModel(
     val name: String,

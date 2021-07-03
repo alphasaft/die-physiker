@@ -1,6 +1,5 @@
 package tokenizing
 
-
 open class NLPBaseTokenizer(
     vararg tokenModels: TokenModel
 ) : Tokenizer(*(tokenModels.toSet() union baseTokens()).toTypedArray()) {

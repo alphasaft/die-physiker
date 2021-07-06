@@ -1,6 +1,6 @@
 package tokenizing
 
-import util.normalize
+import normalize
 import dto.Token
 import dto.TokenList
 

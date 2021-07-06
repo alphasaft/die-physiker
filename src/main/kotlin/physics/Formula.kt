@@ -3,14 +3,14 @@ package physics
 import physics.specs.ComponentSpec
 import physics.specs.FieldAccessSpec
 import physics.specs.RootComponentSpec
-import util.*
+import mergeWith
 
 
 class Formula(
     private val rootSpec: RootComponentSpec,
-    val componentsSpecs: List<ComponentSpec>,
+    private val componentsSpecs: List<ComponentSpec>,
     private val requiredFields: List<FieldAccessSpec>,
-    val outputSpec: FieldAccessSpec,
+    private val outputSpec: FieldAccessSpec,
     private val expression: (FormulaArguments) -> Any,
 ) {
     init { checkComponentsWereDeclared() }
@@ -109,12 +109,8 @@ class Formula(
         where: Map<String, PhysicalComponent>
     ): Map<String, PhysicalComponent>? {
         requireNotNull(spec.location)
-        return when (spec.select) {
-            '?' -> selectSingleComponentFor(spec, constraint, where)?.let { mapOf(it) }
-            '*' -> selectAllComponentsFor(spec, constraint, where)
-            '+' -> selectOnlyYetUnselectedComponentsFor(spec, constraint, where)
-            else -> throw IllegalArgumentException("Invalid ComponentSpec flag ${spec.select}")
-        }
+        return if (spec.selectAll) selectAllYetUnselectedComponentsFor(spec, constraint, where)
+        else selectSingleComponentFor(spec, constraint, where)?.let { mapOf(it) }
     }
 
     private fun selectSingleComponentFor(
@@ -125,11 +121,11 @@ class Formula(
         return where
             .getValue(spec.parentName)
             .getSubComponents(spec.storedInto)
-            .find(constraint)
+            .find { constraint(it) && it !in where.values }
             ?.let { spec.name to it }
     }
 
-    private fun selectAllComponentsFor(
+    private fun selectAllYetUnselectedComponentsFor(
         spec: ComponentSpec,
         constraint: Predicate<PhysicalComponent>,
         where: Map<String, PhysicalComponent>
@@ -137,24 +133,10 @@ class Formula(
         return where
             .getValue(spec.parentName)
             .getSubComponents(spec.storedInto)
+            .filter { it !in where.values }
             .takeIf { it.all { component -> constraint(component) } }
             ?.withIndex()
-            ?.associateBy { (index, _) -> spec.name + (index + 1) }  // First index is #1
-            ?.mapValues { (_, indexedValue) -> indexedValue.value }
-    }
-
-    private fun selectOnlyYetUnselectedComponentsFor(
-        spec: ComponentSpec,
-        constraint: Predicate<PhysicalComponent>,
-        where: Map<String, PhysicalComponent>
-    ): Map<String, PhysicalComponent>? {
-        return where
-            .getValue(spec.parentName)
-            .getSubComponents(spec.storedInto)
-            .filter { component -> !where.any { (_, value) -> component === value } }
-            .takeIf { it.all { component -> constraint(component) } }
-            ?.withIndex()
-            ?.associateBy { (index, _) -> spec.name + (index + 1) }  // First index is #1
+            ?.associateBy { (index, _) -> spec.name.replace("#", (index+1).toString()) }  // First index is #1
             ?.mapValues { (_, indexedValue) -> indexedValue.value }
     }
 }

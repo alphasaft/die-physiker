@@ -1,8 +1,6 @@
 package nlp
 
 import dto.TokenList
-import nlp.words.UnknownWord
-import nlp.words.Word
 import dto.WordInstance
 import dto.WordInstanceList
 

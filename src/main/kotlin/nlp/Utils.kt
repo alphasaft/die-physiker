@@ -1,8 +1,6 @@
 package nlp
 
-import nlp.words.UnknownWord
 import kotlin.math.max
-import dto.WordInstance
 
 
 // Easier to understand

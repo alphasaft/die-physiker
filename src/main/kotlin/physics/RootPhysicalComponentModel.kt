@@ -2,6 +2,7 @@ package physics
 
 import physics.specs.FieldSpec
 
+
 open class RootPhysicalComponentModel(
     name: String,
     fieldSpecs: List<FieldSpec>,

@@ -1,8 +1,3 @@
-package util
-
-import util.xml.Node
-import util.xml.name
-
 fun <T> noop(obj: T) = obj
 
 fun <T> buildList(builder: MutableList<T>.() -> Unit) = mutableListOf<T>().apply(builder).toList()
@@ -18,7 +13,8 @@ fun <T : Any> generate(first: T?, next: (T) -> T?): List<T> {
     return result
 }
 
-fun println(vararg args: Any?, separator: String = ", ") {
+fun println(vararg args: Any?, separator: String = " ") {
     kotlin.io.println(args.joinToString(separator))
 }
 
+fun cwd(): String = System.getProperty("user.dir") + "\\src\\main"

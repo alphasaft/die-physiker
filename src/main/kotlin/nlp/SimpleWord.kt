@@ -1,17 +1,15 @@
-package nlp.words
+package nlp
 
 import dto.TokenList
 import dto.WordInstance
 import dto.WordInstanceList
-import nlp.Consumed
-import nlp.overcomeResemblanceThreshold
-import nlp.resemblanceTo
-
 
 class SimpleWord(
-    override val name: String,
-    forms: List<String>
+    forms: List<String>,
+    override val name: String = "<unnamed>",
 ) : Word {
+    constructor(form: String, name: String = "<unnamed>"): this(listOf(form), name)
+
     private val forms: List<String> = forms.map { it.toLowerCase() }
 
     override fun consume(tokens: TokenList): Pair<Consumed, WordInstanceList>? {

@@ -1,15 +1,15 @@
-package nlp.words
+package nlp
 
 import dto.TokenList
 import dto.WordInstance
 import dto.WordInstanceList
-import nlp.Consumed
-import util.*
+import noop
+import toMutableMap
 
 
 class WordCategory(
-    override val name: String,
     tokenTypesToConverters: List<Pair<String, (String) -> Any>>,
+    override val name: String = "<unnamed>",
 ) : Word {
     private val tokenTypesToConverters = tokenTypesToConverters.ifEmpty { listOf(name to ::noop) }.toMutableMap()
 

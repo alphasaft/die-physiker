@@ -1,15 +1,15 @@
-package nlp.words
+package nlp
 
 import dto.TokenList
 import dto.WordInstance
 import dto.WordInstanceList
 import dto.values
-import nlp.Consumed
+import println
 
 class WordChain(
     components: List<Word>,
-    override var name: String = "<not named>",
-    private var concatenate: WordChain.(WordInstanceList) -> WordInstanceList = ::defaultConcatenate
+    override var name: String = "<unnamed>",
+    private var concatenate: WordChain.(WordInstanceList) -> WordInstanceList = Util::defaultConcatenateToString
 ) : Word {
 
     companion object Util {

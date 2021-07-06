@@ -1,4 +1,4 @@
-package util
+
 
 fun <T> T.ofWhich(check: T.() -> Boolean): T {
     require(check()) { "Constraint wasn't fulfilled for object $this" }
@@ -41,9 +41,22 @@ fun String.normalize(): String {
 }
 
 
-fun <T> List<T>.indexed(): List<Pair<Int, T>> = indices.zip(this)
 fun <T> List<T>.subList(startIndex: Int) = subList(startIndex, size)
+
 fun <A, B> List<Pair<A, B>>.toMutableMap() = toMap().toMutableMap()
+
+@JvmName("flatListTimes")
+operator fun <T> List<T>.times(other: List<T>) = map { listOf(it) } * other
+
+operator fun <T> List<List<T>>.times(other: List<T>): List<List<T>> {
+    val result = mutableListOf<List<T>>()
+    for (subList in this) {
+        for (item in other) {
+            result.add(subList.plusElement(item))
+        }
+    }
+    return result
+}
 
 fun <K, V> MutableMap<K, V>.mergeWith(other: Map<K, V>, merge: (old: V, new: V) -> V) {
     for ((k, v) in other) this[k] = if (containsKey(k)) merge(this.getValue(k), v) else v

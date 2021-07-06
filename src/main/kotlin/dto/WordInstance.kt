@@ -1,6 +1,6 @@
 package dto
 
-import nlp.words.Word
+import nlp.Word
 
 data class WordInstance(
     val model: Word,

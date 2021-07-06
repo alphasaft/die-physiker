@@ -1,12 +1,14 @@
-package nlp.words
+package nlp
 
+import dto.Token
 import dto.TokenList
+import dto.WordInstance
 import dto.WordInstanceList
-import nlp.Consumed
+import println
 
 class WordUnion(
     components: List<Word>,
-    override var name: String,
+    override var name: String = "<unnamed>",
 ) : Word {
 
     private companion object Util {
@@ -17,7 +19,9 @@ class WordUnion(
     private val components: List<Word> = flattenComponents(components)
 
     override fun consume(tokens: TokenList): Pair<Consumed, WordInstanceList>? {
-        for (word in components) word.consume(tokens)?.also { return it }
+        for (word in components) word.consume(tokens)?.also { (consumed, words) ->
+            return consumed to words.map { it.copy(model = this, name = name) }
+        }
         return null
     }
 }

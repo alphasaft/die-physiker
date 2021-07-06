@@ -1,11 +1,10 @@
-package nlp.words
+package nlp
 
 import dto.TokenList
 import dto.WordInstance
 import dto.WordInstanceList
-import nlp.Consumed
 
-object UnknownWord : Word {
+internal object UnknownWord : Word {
     override val name = "<unknown>"
     override fun consume(tokens: TokenList): Pair<Consumed, WordInstanceList> {
         val token = tokens[0]

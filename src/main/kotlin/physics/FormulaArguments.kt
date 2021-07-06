@@ -3,13 +3,10 @@ package physics
 import kotlin.reflect.KClass
 
 
-class FormulaArguments(private val storage: Map<String, PhysicalComponent>) {
+class FormulaArguments(val storage: Map<String, PhysicalComponent>) {
+    constructor(): this(emptyMap())
+
     inline operator fun <reified T : Any> get(componentDotField: String): T = get(T::class, componentDotField)
-
-    fun displayStorage() {
-        println(storage)
-    }
-
     fun <T : Any> get(kClass: KClass<T>, componentDotField: String): T {
         return storage.getValue(componentDotField.split(".").first()).getField(kClass, componentDotField.split(".").last())
             ?: throw NoSuchElementException("Value of field $componentDotField is undeclared or unknown.")
@@ -24,7 +21,7 @@ class FormulaArguments(private val storage: Map<String, PhysicalComponent>) {
 
         while (true) {
             try {
-                result.add(get(kClass, "$component${i++}.$field"))
+                result.add(get(kClass, "${component.replace("#", i++.toString())}.$field"))
             } catch (e: NoSuchElementException) {
                 return result
             }

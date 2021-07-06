@@ -1,8 +1,6 @@
 package physics
 
 import physics.specs.FieldSpec
-import util.println
-import util.toMutableMap
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
 
@@ -13,13 +11,6 @@ open class PhysicalComponentModel(
     protected val subComponentsNames: Map<String, ComponentTypeName> = emptyMap()
 ) {
     private val fieldsSpecs = fieldsSpecs.associate { it.name to it.type }
-
-    companion object FormulaRegister {
-        val formulas = mutableListOf<Formula>()
-
-        fun addFormula(formula: Formula) { formulas.add(formula) }
-        fun addFormulas(formulas: List<Formula>) { FormulaRegister.formulas.addAll(formulas) }
-    }
 
     /** 'Constructor' for PhysicalComponent */
     open operator fun invoke(
@@ -35,7 +26,7 @@ open class PhysicalComponentModel(
     ) {
         private val registeredFields = fieldsSpecs.mapValues { UNKNOWN }.toMutableMap<String, Any?>()
         private val registeredSubComponents = subComponentsNames.keys.associateWith { mutableListOf<PhysicalComponent>() }.toMutableMap()
-        val knownFields get() = registeredFields.keys.zip(registeredFields.values.filterNotNull()).toMutableMap()
+        val knownFields get() = registeredFields.filterValues { it != null }
         val typeName = this@PhysicalComponentModel.name
 
         private val knownFieldsCount get(): Int =
@@ -102,9 +93,7 @@ open class PhysicalComponentModel(
         }
 
         private fun computeUnknownField(fieldName: String, root: RootPhysicalComponent): Any? {
-            println(fieldName)
-            println(formulas.associate { it.componentsSpecs to it.outputSpec to it.computeAs<Any>(root, fieldName, this) }.filterValues { it != null })
-            return formulas.mapNotNull { it.computeAs<Any>(root, fieldName, this) }.also(::println).firstOrNull()
+            return FormulaRegister.formulas.mapNotNull { it.computeAs<Any>(root, fieldName, this) }.firstOrNull()
         }
 
         private fun computeUnknownFieldsOfSubcomponents(root: RootPhysicalComponent) {

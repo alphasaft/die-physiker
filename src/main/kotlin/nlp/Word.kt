@@ -1,4 +1,4 @@
-package nlp.words
+package nlp
 
 import nlp.Consumed
 import dto.TokenList

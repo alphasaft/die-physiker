@@ -3,7 +3,7 @@ package physics.specs
 import physics.ComponentTypeName
 import physics.ComponentVariableName
 
-data class RootComponentSpec(
+data class RootComponentAccessSpec(
     val type: ComponentTypeName,
     val name: ComponentVariableName,
 )

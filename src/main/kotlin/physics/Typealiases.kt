@@ -7,6 +7,5 @@ typealias RootPhysicalComponent = RootPhysicalComponentModel.Instance
 
 typealias ComponentTypeName = String
 typealias ComponentVariableName = String
-typealias FieldName = String
 
 typealias FormulaExpression = (FormulaArguments) -> Any

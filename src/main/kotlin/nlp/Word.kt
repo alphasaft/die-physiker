@@ -1,10 +1,7 @@
 package nlp
 
-import nlp.Consumed
-import dto.TokenList
-import dto.WordInstanceList
 
 interface Word {
     val name: String
-    fun consume(tokens: TokenList): Pair<Consumed, WordInstanceList>?
+    fun consume(input: String): Pair<Consumed, WordInstanceList>?
 }

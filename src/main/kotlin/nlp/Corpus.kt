@@ -1,20 +1,15 @@
 package nlp
 
-import dto.TokenList
-import dto.WordInstance
-import dto.WordInstanceList
-
-
 class Corpus(vararg words: Word) {
     val words: List<Word> = words.toList().plusElement(UnknownWord)
 
-    fun match(tokens: TokenList): WordInstanceList {
-        var remainingTokens = tokens
+    fun match(input: String): WordInstanceList {
+        var remainingInput = input
         val result = mutableListOf<WordInstance>()
-        while (remainingTokens.isNotEmpty()) {
+        while (remainingInput.isNotEmpty()) {
             for (word in words) {
-                val (consumed, producedWords) = word.consume(remainingTokens) ?: continue
-                remainingTokens = remainingTokens.subList(consumed, remainingTokens.size)
+                val (consumed, producedWords) = word.consume(remainingInput) ?: continue
+                remainingInput = remainingInput.substring(consumed, remainingInput.length)
                 result.addAll(producedWords)
                 break
             }

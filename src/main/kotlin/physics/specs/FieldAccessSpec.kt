@@ -1,11 +1,11 @@
 package physics.specs
 
 import physics.ComponentVariableName
-import physics.FieldName
+
 
 data class FieldAccessSpec(
     val fieldOwner: ComponentVariableName,
-    val fieldName: FieldName
+    val fieldName: String
 ) {
     constructor(formattedSpec: String): this(
         formattedSpec.split(".").first(),

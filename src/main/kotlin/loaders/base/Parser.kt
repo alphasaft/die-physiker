@@ -6,6 +6,7 @@ abstract class Parser {
     lateinit var remainingInput: String
     lateinit var initialInput: String
     private val currentCharNo: Int get() = initialInput.length - remainingInput.length
+    private var mostAdvancedFailure: SyntaxParsingError? = null
 
     lateinit var ast: Ast
     lateinit var astPath: MutableList<String>
@@ -51,6 +52,17 @@ abstract class Parser {
         throw errorCtr(charNoAsPosition(), message)
     }
 
+    private fun updateMostAdvancedFailure(candidate: SyntaxParsingError) {
+        val candidatePos = candidate.at
+        val mostAdvancedFailurePos = mostAdvancedFailure?.at
+
+        mostAdvancedFailure = if (
+            mostAdvancedFailure == null
+            || candidatePos.first > mostAdvancedFailurePos!!.first
+            || ((candidatePos.first == mostAdvancedFailurePos.first) && (candidatePos.second > mostAdvancedFailurePos.second))
+        ) candidate else mostAdvancedFailure
+    }
+
     private fun charNoAsPosition(charNo: Int = currentCharNo): Pair<Int, Int> {
         val consumedInput = initialInput.substring(0, charNo)
         return consumedInput.count { it == '\n' }+1 to consumedInput.split("\n").last().length+1
@@ -65,8 +77,11 @@ abstract class Parser {
         }
     }
 
-    protected fun eof() {
-        if (remainingInput != "") fail("Expected source input to end, got $remainingInput")
+    private fun eof() {
+        if (remainingInput != "") {
+            mostAdvancedFailure?.let { throw it }
+            fail("Expected source input to end, got $remainingInput")
+        }
     }
 
     protected fun consume(what: String): String {
@@ -102,18 +117,21 @@ abstract class Parser {
         return { group(groupName) { block() } }
     }
 
-    protected operator fun String.get(leafName: String) {
+    protected operator fun String.get(leafName: String): String {
         val fullPath = astPath.plusElement(leafName)
         ast.setNode(fullPath, AstLeaf(this))
+        return this
     }
 
     protected fun optional(groupName: String? = null, block: () -> Unit) {
         val anchor = ParsingAnchor()
-        ifBlockFails(encloseInGroup(groupName, block)) { recover(anchor) }
+        ifBlockFails(encloseInGroup(groupName, block)) {
+            updateMostAdvancedFailure(candidate = it)
+            recover(anchor)
+        }
     }
 
-    protected inner class ChoiceScope(private val content: ChoiceScope.() -> Unit) {
-        private var mostAdvancedFailure: SyntaxParsingError? = null
+    protected inner class ChoiceScope internal constructor(private val content: ChoiceScope.() -> Unit) {
         private var succeeded = false
 
         fun option(groupName: String? = null, block: () -> Unit) {
@@ -128,16 +146,6 @@ abstract class Parser {
             succeeded = true
         }
 
-        private fun updateMostAdvancedFailure(candidate: SyntaxParsingError) {
-            val candidatePos = candidate.at
-            val mostAdvancedFailurePos = mostAdvancedFailure?.at
-
-            mostAdvancedFailure = if (
-                mostAdvancedFailure == null
-                || candidatePos.first > mostAdvancedFailurePos!!.first
-                || ((candidatePos.first == mostAdvancedFailurePos.first) && (candidatePos.second > mostAdvancedFailurePos.second))
-            ) candidate else mostAdvancedFailure
-        }
 
         fun run() {
             content()
@@ -214,5 +222,44 @@ abstract class Parser {
             return
         }
         fail("Negative lookahead succeeded")
+    }
+
+    protected inner class AllScope internal constructor() {
+        private val combinations: MutableList<List<() -> Unit>> = mutableListOf(listOf())
+
+        fun block(name: String? = null, block: () -> Unit) {
+            val namedBlock = { group(name) { block() } }
+
+            for (combination in combinations.toList()) {
+                for (i in combination.indices) {
+                    combinations.add(combination.subList(0, i) + namedBlock + combination.subList(i, combination.size))
+                }
+                combinations.remove(combination)
+            }
+        }
+
+        fun optionalBlock(name: String? = null, block: () -> Unit) {
+            val namedBlock = { group(name) { block() } }
+
+            for (combination in combinations.toList()) {
+                for (i in combination.indices.plusElement(combination.size)) {
+                    combinations.add(combination.subList(0, i) + namedBlock + combination.subList(i, combination.size))
+                }
+            }
+        }
+
+        internal fun run() {
+            choice {
+                for (combination in combinations.sortedByDescending { it.size }) {
+                    option {
+                        for (block in combination) block()
+                    }
+                }
+            }
+        }
+    }
+
+    protected fun all(block: AllScope.() -> Unit) {
+        return AllScope().apply(block).run()
     }
 }

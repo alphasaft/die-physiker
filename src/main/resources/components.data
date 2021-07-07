@@ -1,0 +1,30 @@
+Root component Solution
+    owns :
+        a mass (Double)
+    subcomponents :
+        {1} solvent (Liquid)
+        {+} solutes (Solute)
+    proxies :
+        volume -> solvent
+
+
+Component Solute
+    owns :
+        a mass (Double)
+        a density (Double)
+
+
+Component Liquid
+    owns :
+        a volume (Double)
+
+
+Component Molecule
+    subcomponents :
+        {+} atoms (Atom)
+
+
+Component Atom
+    owns :
+        a mass (Double)
+        an electronicConfiguration (String)

@@ -1,8 +1,6 @@
 package nlp
 
-import dto.TokenList
-import dto.WordInstance
-import dto.WordInstanceList
+import normalize
 
 class SimpleWord(
     forms: List<String>,
@@ -12,13 +10,12 @@ class SimpleWord(
 
     private val forms: List<String> = forms.map { it.toLowerCase() }
 
-    override fun consume(tokens: TokenList): Pair<Consumed, WordInstanceList>? {
-        val token = tokens[0]
+    override fun consume(input: String): Pair<Consumed, WordInstanceList>? {
         val mostResemblingForm = forms
-            .map { it to it.resemblanceTo(token.value) }
+            .map { it to it.resemblanceTo(input.substring(0, it.length).normalize()) }
             .maxByOrNull { it.second }!!
             .takeIf { it.second.overcomeResemblanceThreshold() }
             ?.first
-        return mostResemblingForm?.let { 1 to listOf(WordInstance(this, name, it, token.start)) }
+        return mostResemblingForm?.let { 1 to listOf(WordInstance(this, name, it)) }
     }
 }

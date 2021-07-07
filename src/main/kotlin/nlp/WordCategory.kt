@@ -1,29 +1,19 @@
 package nlp
 
-import dto.TokenList
-import dto.WordInstance
-import dto.WordInstanceList
-import noop
-import toMutableMap
-
 
 class WordCategory(
-    tokenTypesToConverters: List<Pair<String, (String) -> Any>>,
+    regexesToConverters: List<Pair<String, (String) -> Any>>,
     override val name: String = "<unnamed>",
 ) : Word {
-    private val tokenTypesToConverters = tokenTypesToConverters.ifEmpty { listOf(name to ::noop) }.toMutableMap()
+    private val regexesToConverters = regexesToConverters.map { Regex("^${it.first}") to it.second }
 
-    override fun consume(tokens: TokenList): Pair<Consumed, WordInstanceList>? {
-        val token = tokens[0]
-        return if (token.type in tokenTypesToConverters.keys) {
-            1 to listOf(
-                WordInstance(
-                this,
-                name,
-                tokenTypesToConverters.getValue(token.type)(token.value),
-                token.start
-            )
-            )
-        } else null
+    override fun consume(input: String): Pair<Consumed, WordInstanceList>? {
+        for ((regex, converter) in regexesToConverters) {
+            val match = regex.find(input)?.value
+            if (match != null) {
+                return match.length to listOf(WordInstance(this, name, converter(match)))
+            }
+        }
+        return null
     }
 }

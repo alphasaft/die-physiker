@@ -4,12 +4,11 @@ import loaders.base.Ast
 import loaders.base.AstNode
 import loaders.base.DataLoader
 import physics.Formula
-import physics.FormulaArguments
 import physics.FormulaExpression
 import physics.generateFormulas
-import physics.specs.ComponentSpec
+import physics.specs.ComponentAccessSpec
 import physics.specs.FieldAccessSpec
-import physics.specs.RootComponentSpec
+import physics.specs.RootComponentAccessSpec
 
 object FormulaLoader : DataLoader<FormulaParser, List<Formula>>(FormulaParser) {
     private val formulaExpressions = mutableMapOf<String, FormulaExpression>()
@@ -27,7 +26,7 @@ object FormulaLoader : DataLoader<FormulaParser, List<Formula>>(FormulaParser) {
     }
 
     private fun generateFormulasFromNode(formulaNode: AstNode): List<Formula> {
-        val rootSpec = RootComponentSpec(formulaNode["rootComponentType"], formulaNode["rootComponentName"])
+        val rootSpec = RootComponentAccessSpec(formulaNode["rootComponentType"], formulaNode["rootComponentName"])
         val componentSpecs = generateComponentSpecs(formulaNode)
         val fieldSpecs = generateFieldSpecs(formulaNode)
         val computingClauses = generateComputingClauses(formulaNode)
@@ -39,10 +38,10 @@ object FormulaLoader : DataLoader<FormulaParser, List<Formula>>(FormulaParser) {
         )
     }
 
-    private fun generateComponentSpecs(formulaNode: AstNode): List<ComponentSpec> {
-        val componentSpecs = mutableListOf<ComponentSpec>()
+    private fun generateComponentSpecs(formulaNode: AstNode): List<ComponentAccessSpec> {
+        val componentSpecs = mutableListOf<ComponentAccessSpec>()
         for (specNode in formulaNode.allNodes("componentSpec-#")) {
-            componentSpecs.add(ComponentSpec(
+            componentSpecs.add(ComponentAccessSpec(
                 name = specNode["name"],
                 formattedLocation = "${specNode["component"]}.${specNode["field"]}",
             ))

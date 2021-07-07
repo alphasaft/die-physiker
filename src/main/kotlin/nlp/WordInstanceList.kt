@@ -1,4 +1,4 @@
-package dto
+package nlp
 
 typealias WordInstanceList = List<WordInstance>
 

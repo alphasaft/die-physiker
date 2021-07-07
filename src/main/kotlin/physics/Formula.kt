@@ -1,14 +1,14 @@
 package physics
 
-import physics.specs.ComponentSpec
-import physics.specs.FieldAccessSpec
-import physics.specs.RootComponentSpec
 import mergeWith
+import physics.specs.ComponentAccessSpec
+import physics.specs.FieldAccessSpec
+import physics.specs.RootComponentAccessSpec
 
 
 class Formula(
-    private val rootSpec: RootComponentSpec,
-    private val componentsSpecs: List<ComponentSpec>,
+    private val rootSpec: RootComponentAccessSpec,
+    private val componentsSpecs: List<ComponentAccessSpec>,
     private val requiredFields: List<FieldAccessSpec>,
     private val outputSpec: FieldAccessSpec,
     private val expression: (FormulaArguments) -> Any,
@@ -23,7 +23,7 @@ class Formula(
 
     fun <T> computeAs(
         rootComponent: RootPhysicalComponent,
-        searchedField: FieldName,
+        searchedField: String,
         componentOwningSearchedField: PhysicalComponent
     ): T? {
         if (!isUsefulFor(rootComponent, searchedField, componentOwningSearchedField)) return null
@@ -51,15 +51,15 @@ class Formula(
 
     private fun isUsefulFor(
         rootComponent: RootPhysicalComponent,
-        searchedField: FieldName,
+        searchedField: String,
         componentOwningSearchedField: PhysicalComponent
     ): Boolean {
-        val rootComponentTypeSuits = rootComponent.typeName == rootSpec.type
+        val rootComponentTypeSuits = rootComponent.name == rootSpec.type
         val outputFieldSuits = searchedField == outputSpec.fieldName
         val outputComponentTypeSuits = when {
             componentOwningSearchedField === rootComponent -> outputSpec.fieldOwner == rootSpec.name
             outputSpec.fieldOwner == rootSpec.name -> componentOwningSearchedField === rootComponent
-            else -> componentOwningSearchedField.typeName == rootComponent.typeOfSubComponent(findSpecFor(outputSpec.fieldOwner)!!.storedInto)
+            else -> componentOwningSearchedField.name == rootComponent.typeOfSubComponent(findSpecFor(outputSpec.fieldOwner)!!.storedInto)
         }
         return rootComponentTypeSuits && outputFieldSuits && outputComponentTypeSuits
     }
@@ -104,7 +104,7 @@ class Formula(
         componentsSpecs.find { it.name == componentName }
 
     private fun selectComponentsFor(
-        spec: ComponentSpec,
+        spec: ComponentAccessSpec,
         constraint: Predicate<PhysicalComponent>,
         where: Map<String, PhysicalComponent>
     ): Map<String, PhysicalComponent>? {
@@ -114,7 +114,7 @@ class Formula(
     }
 
     private fun selectSingleComponentFor(
-        spec: ComponentSpec,
+        spec: ComponentAccessSpec,
         constraint: Predicate<PhysicalComponent>,
         where: Map<String, PhysicalComponent>
     ): Pair<String, PhysicalComponent>? {
@@ -126,7 +126,7 @@ class Formula(
     }
 
     private fun selectAllYetUnselectedComponentsFor(
-        spec: ComponentSpec,
+        spec: ComponentAccessSpec,
         constraint: Predicate<PhysicalComponent>,
         where: Map<String, PhysicalComponent>
     ): Map<String, PhysicalComponent>? {

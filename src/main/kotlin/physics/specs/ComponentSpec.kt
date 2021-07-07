@@ -2,12 +2,10 @@ package physics.specs
 
 
 data class ComponentSpec(
-    val location: FieldAccessSpec,
     val name: String,
+    val type: String,
+    val atLeast: Int = 0,
+    val atMost: Int = -1
 ) {
-    constructor(formattedLocation: String, name: String): this(FieldAccessSpec(formattedLocation), name)
-
-    val selectAll get() = name.endsWith("#")
-    val parentName get() = location.fieldOwner
-    val storedInto get() = location.fieldName
+    constructor(name: String, type: String, exactly: Int): this(name, type, atLeast = exactly, atMost = exactly)
 }

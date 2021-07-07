@@ -1,13 +1,12 @@
 package nlp
 
-import dto.TokenList
-import dto.WordInstance
-import dto.WordInstanceList
-
 internal object UnknownWord : Word {
     override val name = "<unknown>"
-    override fun consume(tokens: TokenList): Pair<Consumed, WordInstanceList> {
-        val token = tokens[0]
-        return 1 to listOf(WordInstance(this, name, token.value, token.start))
+    override fun consume(input: String): Pair<Consumed, WordInstanceList> {
+        return if (input.first().isLetter()) {
+            input.takeWhile { it.isLetter() }.let { it.length to listOf(WordInstance(this, name, it)) }
+        } else {
+            1 to listOf(WordInstance(this, name, input.first()))
+        }
     }
 }

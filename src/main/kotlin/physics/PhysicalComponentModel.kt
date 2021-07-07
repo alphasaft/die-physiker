@@ -1,16 +1,36 @@
 package physics
 
+import physics.specs.ComponentSpec
 import physics.specs.FieldSpec
+import physics.specs.ProxySpec
+import println
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
+import kotlin.reflect.typeOf
 
 
 open class PhysicalComponentModel(
     protected val name: String,
     fieldsSpecs: List<FieldSpec>,
-    protected val subComponentsNames: Map<String, ComponentTypeName> = emptyMap()
+    proxiesSpecs: List<ProxySpec> = emptyList(),
+    private val subcomponents: List<ComponentSpec> = emptyList(),
 ) {
-    private val fieldsSpecs = fieldsSpecs.associate { it.name to it.type }
+    private val fields = fieldsSpecs.associate { it.name to it.type }
+    private val proxies = proxiesSpecs.associate { it.name to it.target }
+    private val subcomponentsNames = subcomponents.map { it.name }
+
+    init {
+        checkProxies()
+    }
+
+    private fun checkProxies() {
+        for ((proxyName, proxyTarget) in proxies) {
+            val targetedSubcomponent = subcomponents.find { it.name == proxyTarget }
+            require(targetedSubcomponent != null) { "Proxy $proxyName targets nothing." }
+            require(targetedSubcomponent.atLeast == 1 && targetedSubcomponent.atMost == 1) { "Proxy $proxyName targets several subcomponents at once." }
+            require(proxyName !in fields) { "Proxy $proxyName overrides an existing field." }
+        }
+    }
 
     /** 'Constructor' for PhysicalComponent */
     open operator fun invoke(
@@ -24,44 +44,72 @@ open class PhysicalComponentModel(
         fields: Map<String, Any?>,
         subComponents: Map<String, List<Instance>>
     ) {
-        private val registeredFields = fieldsSpecs.mapValues { UNKNOWN }.toMutableMap<String, Any?>()
-        private val registeredSubComponents = subComponentsNames.keys.associateWith { mutableListOf<PhysicalComponent>() }.toMutableMap()
-        val knownFields get() = registeredFields.filterValues { it != null }
-        val typeName = this@PhysicalComponentModel.name
+
+        private val registeredFields = this@PhysicalComponentModel.fields.mapValues { UNKNOWN }.toMutableMap<String, Any?>()
+        private val registeredSubcomponents = this@PhysicalComponentModel.subcomponents.associate { it.name to mutableListOf<PhysicalComponent>() }.toMutableMap()
+        val knownFields get() = registeredFields.filterValues { it != null } + proxies.mapValues { (name, _) -> getField(name) }
+        val name = this@PhysicalComponentModel.name
 
         private val knownFieldsCount get(): Int =
             registeredFields.values.count { it != UNKNOWN } +
-            registeredSubComponents.values.flatten().sumBy { it.knownFieldsCount }
+            registeredSubcomponents.values.flatten().sumBy { it.knownFieldsCount }
 
         init {
             for ((name, value) in fields) setField(name, value)
             for ((name, components) in subComponents) registerSubComponents(name, components)
+            checkSubComponentsQuantities()
         }
 
-        private fun setField(key: String, value: Any?) {
-            require(key in fieldsSpecs) { "Invalid field $key for component $typeName" }
-            require(value == UNKNOWN || fieldsSpecs.getValue(key).isInstance(value)) { "Expected type ${fieldsSpecs.getValue(key).simpleName} for field $key, got $value"}
-            registeredFields[key] = value
+        private fun checkSubComponentsQuantities() {
+            for ((subComponentField, subComponents) in registeredSubcomponents) {
+                val spec = this@PhysicalComponentModel.subcomponents.find { subComponentField == it.name }!!
+                when {
+                    spec.atMost == -1 -> require(subComponents.size >= spec.atLeast) { "Expected at least ${spec.atLeast} subcomponents under the name $subComponentField (${spec.type}), got ${subComponents.size}." }
+                    spec.atLeast == spec.atMost -> require(subComponents.size == spec.atLeast) { "Expected exactly ${spec.atLeast} subcomponent(s) under the name $subComponentField (${spec.type}), got ${subComponents.size}." }
+                    else -> require(subComponents.size in spec.atLeast..spec.atMost) { "Expected between ${spec.atLeast} and ${spec.atMost} subcomponents under the name $subComponentField (${spec.type}), got ${subComponents.size}." }
+                }
+            }
         }
 
-        fun registerSubComponent(key: String, value: Instance) {
-            require(key in subComponentsNames) { "Invalid subcomponent name $key for component $typeName "}
-            require(value.typeName == subComponentsNames[key]) { "Expected type ${subComponentsNames[key]} for key $key, got ${value.typeName}" }
-            registeredSubComponents.getValue(key).add(value)
+        private fun setField(name: String, value: Any?) {
+            if (name in proxies) setProxy(name, value)
+
+            require(name in fields) { "Invalid field $name for component ${this.name}" }
+            require(value == UNKNOWN || fields.getValue(name).isInstance(value)) { "Expected type ${fields.getValue(name).simpleName} for field $name, got $value"}
+            registeredFields[name] = value
         }
 
-        fun registerSubComponents(key: String, values: List<Instance>) {
-            require(key in subComponentsNames) { "Invalid subcomponent name $key for component $typeName "}
-            require(values.all { it.typeName == subComponentsNames[key] }) { "Expected type ${subComponentsNames[key]} for key $key, got ${values.find { it.typeName != subComponentsNames[key] }!!.typeName}" }
-            registeredSubComponents.getValue(key).addAll(values)
+        private fun setProxy(name: String, value: Any?) {
+            val target = proxies.getValue(name)
+            getSubComponents(target).single().setField(name, value)
+        }
+
+        private fun registerSubComponent(key: String, value: Instance) {
+            val subComponentSpec = subcomponents.find { it.name == key }
+            require(subComponentSpec != null) { "Invalid subcomponent name $key for component $name "}
+            require(value.name == subComponentSpec.type) { "Invalid subcomponent type for field $key : expected ${subComponentSpec.type}, got ${value.name}" }
+            registeredSubcomponents.getValue(key).add(value)
+        }
+
+        private fun registerSubComponents(key: String, values: List<Instance>) {
+            for (value in values) {
+                registerSubComponent(key, value)
+            }
         }
 
         inline fun <reified T : Any> getField(fieldName: String): T? = getField(T::class, fieldName)
         fun <T : Any> getField(kClass: KClass<T>, fieldName: String): T? {
-            require(fieldName in fieldsSpecs) { "Attempting to access non-existing field $fieldName of component $typeName"}
-            require(fieldsSpecs.getValue(fieldName).isSubclassOf(kClass)) { "Cast from ${fieldsSpecs.getValue(fieldName).simpleName} to ${kClass.simpleName} for field $fieldName can't succeed"}
+            if (fieldName in proxies) return getProxy(kClass, fieldName)
+
+            require(fieldName in fields) { "Attempting to access non-existing field $fieldName of component $name"}
+            require(fields.getValue(fieldName).isSubclassOf(kClass)) { "Cast from ${fields.getValue(fieldName).simpleName} to ${kClass.simpleName} for field $fieldName can't succeed"}
             @Suppress("UNCHECKED_CAST")
             return registeredFields.getValue(fieldName) as T?
+        }
+
+        private fun <T : Any> getProxy(kClass: KClass<T>, fieldName: String): T? {
+            val target = proxies.getValue(fieldName)
+            return getSubComponents(target).single().getField(kClass, fieldName)
         }
 
         fun getSubComponent(subComponentName: String, predicate: (Instance) -> Boolean = { true }): Instance? {
@@ -69,12 +117,12 @@ open class PhysicalComponentModel(
         }
 
         fun getSubComponents(subComponentsFieldName: String): List<Instance> {
-            require(subComponentsFieldName in subComponentsNames) { "Attempting to access non-existing subcomponent field $subComponentsFieldName of component $typeName"}
-            return registeredSubComponents.getValue(subComponentsFieldName)
+            require(subComponentsFieldName in subcomponentsNames) { "Attempting to access non-existing subcomponent field $subComponentsFieldName of component $name"}
+            return registeredSubcomponents.getValue(subComponentsFieldName)
         }
 
         fun hasSubComponent(subComponent: Instance): Boolean {
-            val allSubComponents = registeredSubComponents.values.flatten()
+            val allSubComponents = registeredSubcomponents.values.flatten()
             return allSubComponents.any { it === subComponent } || allSubComponents.any { it.hasSubComponent(subComponent) }
         }
 
@@ -97,7 +145,7 @@ open class PhysicalComponentModel(
         }
 
         private fun computeUnknownFieldsOfSubcomponents(root: RootPhysicalComponent) {
-            registeredSubComponents.values.forEach { subComponentList ->
+            registeredSubcomponents.values.forEach { subComponentList ->
                 subComponentList.forEach { subComponent ->
                     subComponent.computeAll(root)
                     subComponent.computeUnknownFieldsOfSubcomponents(root)
@@ -105,7 +153,7 @@ open class PhysicalComponentModel(
             }
         }
 
-        fun typeOfSubComponent(subComponentsField: String) = subComponentsNames[subComponentsField]!!
+        fun typeOfSubComponent(subComponentsField: String) = subcomponents.find { it.name == subComponentsField }?.type
     }
 
 }

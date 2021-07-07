@@ -1,13 +1,16 @@
 package physics
 
+import physics.specs.ComponentSpec
 import physics.specs.FieldSpec
+import physics.specs.ProxySpec
 
 
 open class RootPhysicalComponentModel(
     name: String,
     fieldSpecs: List<FieldSpec>,
-    subComponentsNames: Map<String, ComponentTypeName>,
-) : PhysicalComponentModel(name, fieldSpecs, subComponentsNames) {
+    proxiesSpecs: List<ProxySpec> = emptyList(),
+    subComponentsSpecs: List<ComponentSpec> = emptyList(),
+) : PhysicalComponentModel(name, fieldSpecs, proxiesSpecs, subComponentsSpecs) {
 
     inner class Instance internal constructor(
         fields: Map<String, Any?>,

@@ -1,8 +1,8 @@
 package physics
 
-import physics.specs.ComponentSpec
+import physics.specs.ComponentAccessSpec
 import physics.specs.FieldAccessSpec
-import physics.specs.RootComponentSpec
+import physics.specs.RootComponentAccessSpec
 import kotlin.reflect.KClass
 
 
@@ -17,8 +17,8 @@ internal val builtinNamesToClasses: Map<String, KClass<*>> = listOf(
 ).associateBy { it.simpleName!! }
 
 fun generateFormulas(
-    rootSpec: RootComponentSpec,
-    componentsSpecs: List<ComponentSpec>,
+    rootSpec: RootComponentAccessSpec,
+    componentsSpecs: List<ComponentAccessSpec>,
     concernedFields: List<FieldAccessSpec>,
     expressionsDependingOnRequiredOutput: Map<String, (FormulaArguments) -> Any>
 ): List<Formula> {

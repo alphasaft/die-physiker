@@ -1,13 +1,22 @@
-Formula "density from mass and volume" for Solution S
-    concerns X from S.solutes, S.volume, X.mass, X.density
-    computing
-        X.density as X.mass / S.volume ;
-        S.volume as X.mass / X.density ;
-        X.mass as X.density * S.volume ;
+La formule "p = m/V" pour S une Solution
+    concerne
+        X de S.solutes,
+        S.volume,
+        X.mass,
+        X.density
+    calculant
+        X.density comme X.mass / S.volume : "p = m/V" ,
+        S.volume comme X.mass / X.density : "V = m/p" ,
+        X.mass comme X.density * S.volume : "m = p*V" ,
 
 
-Formula "total solution mass from solutes masses" for Solution S
-    concerns X from S.solutes, A# from S.solutes, A#.mass, X.mass, S.mass
-    computing
-        X.mass as S.mass - A#.mass->sum ;
-        S.mass as X.mass + A#.mass->sum ;
+La formule "Masse d'une solution = somme des masses des solutés + masse du solvant" pour S une Solution
+    concerne
+        X de S.solutes,
+        A# de S.solutes,
+        S.mass,
+        X.mass,
+        A#.mass
+    calculant
+        X.mass comme S.mass - A#.mass->sum,
+        S.mass comme X.mass + A#.mass->sum,

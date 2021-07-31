@@ -1,6 +1,7 @@
 package loaders.base
 
 import java.io.File
+import java.util.*
 
 abstract class Parser {
     lateinit var remainingInput: String
@@ -21,7 +22,7 @@ abstract class Parser {
 
     fun parse(file: File) = parse(file.readText())
     fun parse(input: String): Ast {
-        initialInput = if (caseInsensitive) input.toLowerCase() else input
+        initialInput = if (caseInsensitive) input.lowercase() else input
         remainingInput = initialInput
         ast = prepareAst(input)
         astPath = mutableListOf()
@@ -85,8 +86,8 @@ abstract class Parser {
     }
 
     protected fun consume(what: String): String {
-        val caseAdaptedWhat = if (caseInsensitive) what.toLowerCase() else what
-        if (!remainingInput.startsWith(caseAdaptedWhat)) fail("Expected '$what'.")
+        val caseAdaptedWhat = if (caseInsensitive) what.lowercase() else what
+        if (!remainingInput.startsWith(caseAdaptedWhat)) fail("Expected '$what', got ${remainingInput.split(*whitespaces.toCharArray()).first()}.")
         remainingInput = remainingInput.removePrefix(caseAdaptedWhat).dropWhile { it in whitespaces }
         return what
     }
@@ -95,7 +96,7 @@ abstract class Parser {
     protected fun consumeRegex(what: Regex) = consumeRegex(what.pattern)
     protected fun consumeRegex(what: String): String {
         val regex = Regex("^$what", options = if (caseInsensitive) setOf(RegexOption.IGNORE_CASE) else emptySet())
-        val matched = regex.find(remainingInput) ?: fail("Expected something matching $what.")
+        val matched = regex.find(remainingInput) ?: fail("Expected something matching $what, got ${remainingInput.split(*whitespaces.toCharArray()).first()}")
         remainingInput = remainingInput.drop(matched.value.length).dropWhile { it in whitespaces }
         return matched.value
     }
@@ -146,7 +147,6 @@ abstract class Parser {
             succeeded = true
         }
 
-
         fun run() {
             content()
             if (!succeeded) throw mostAdvancedFailure ?: IllegalArgumentException("No options were declared for choices block")
@@ -160,8 +160,8 @@ abstract class Parser {
     }
 
     /**
-     * Repeats from [n] to [m] times the given block
-     *  If [m] is -1 then the block will be executed [n] times, then until something fails to parse.
+     * Repeats from [n] to [m] physics.values.times the given block
+     *  If [m] is -1 then the block will be executed [n] physics.values.times, then until something fails to parse.
      */
     protected fun between(n: Int, m: Int, groupName: String? = null, separator: String = "", block: () -> Unit) {
         require(m == -1 || (m > 0 && m >= n)) { "m should be -1 or greater than 0, and for the latter case greater than or equal to n."}
@@ -231,7 +231,7 @@ abstract class Parser {
             val namedBlock = { group(name) { block() } }
 
             for (combination in combinations.toList()) {
-                for (i in combination.indices) {
+                for (i in combination.indices.plusElement(combination.size)) {
                     combinations.add(combination.subList(0, i) + namedBlock + combination.subList(i, combination.size))
                 }
                 combinations.remove(combination)

@@ -1,0 +1,22 @@
+Express time (Double) with
+    Main unit
+        seconde, secondes (s)
+        convert to minutes it/60
+        convert to hours it/3600
+    Unit
+        minute, minutes (min)
+        convert to secondes it*60
+    Unit
+        heure, heures (h)
+        convert to secondes it*3600
+
+
+Express distance (Double) with
+    Main unit
+        metre, metres (m)
+
+    Use nano, micro, milli, centi, deci, deca, hecto, kilo
+
+
+Express electronicConfiguration (String by isValidElectronicConfiguration) with no unit
+

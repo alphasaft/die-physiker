@@ -1,6 +1,7 @@
 package nlp
 
 import normalize
+import java.util.*
 
 class SimpleWord(
     forms: List<String>,
@@ -8,7 +9,7 @@ class SimpleWord(
 ) : Word {
     constructor(form: String, name: String = "<unnamed>"): this(listOf(form), name)
 
-    private val forms: List<String> = forms.map { it.toLowerCase() }
+    private val forms: List<String> = forms.map { it.lowercase(Locale.getDefault()) }
 
     override fun consume(input: String): Pair<Consumed, WordInstanceList>? {
         val mostResemblingForm = forms

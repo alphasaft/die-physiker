@@ -1,16 +1,16 @@
+import java.util.*
 
-
-fun <T> T.ofWhich(check: T.() -> Boolean): T {
+internal fun <T> T.ofWhich(check: T.() -> Boolean): T {
     require(check()) { "Constraint wasn't fulfilled for object $this" }
     return this
 }
 
-fun <T> T.ofWhichOrNull(check: T.() -> Boolean): T? {
+internal fun <T> T.ofWhichOrNull(check: T.() -> Boolean): T? {
     return if (check()) this else null
 }
 
-fun String.remove(s: String): String = replace(s, "")
-fun String.swap(s1: String, s2: String): String {
+internal fun String.remove(s: String): String = replace(s, "")
+internal fun String.swap(s1: String, s2: String): String {
     var i = 0
     while ("[$i]" in this) {
         i++
@@ -30,8 +30,8 @@ private val NORMALIZING_MAP = listOf(
     listOf('î', 'ï') to 'i'
 )
 
-fun String.normalize(): String {
-    var result = toLowerCase()
+internal fun String.normalize(): String {
+    var result = lowercase(Locale.getDefault())
     for ((charsToNormalize, normalized) in NORMALIZING_MAP) {
         for (char in charsToNormalize) {
             result = result.replace(char, normalized)
@@ -41,23 +41,34 @@ fun String.normalize(): String {
 }
 
 
-fun <T> List<T>.subList(startIndex: Int) = subList(startIndex, size)
+internal fun <T> List<T>.subList(startIndex: Int) = subList(startIndex, size)
 
-fun <A, B> List<Pair<A, B>>.toMutableMap() = toMap().toMutableMap()
+internal fun <A, B> List<Pair<A, B>>.toMutableMap() = toMap().toMutableMap()
 
-@JvmName("flatListTimes")
-operator fun <T> List<T>.times(other: List<T>) = map { listOf(it) } * other
 
-operator fun <T> List<List<T>>.times(other: List<T>): List<List<T>> {
-    val result = mutableListOf<List<T>>()
-    for (subList in this) {
-        for (item in other) {
-            result.add(subList.plusElement(item))
-        }
-    }
+internal operator fun <T, R> List<T>.times(other: List<R>): List<Pair<T, R>> {
+    val result = mutableListOf<Pair<T, R>>()
+    for (item1 in this) for (item2 in other) result.add(item1 to item2)
     return result
 }
 
-fun <K, V> MutableMap<K, V>.mergeWith(other: Map<K, V>, merge: (old: V, new: V) -> V) {
+internal fun <K, V> MutableMap<K, V>.mergeWith(other: Map<K, V>, merge: (old: V, new: V) -> V) {
     for ((k, v) in other) this[k] = if (containsKey(k)) merge(this.getValue(k), v) else v
 }
+
+internal fun <K, V> Map<K, V>.mergedWith(other: Map<K, V>, merge: (old: V, new: V) -> V): MutableMap<K, V> {
+    val result = mutableMapOf<K, V>()
+    result.mergeWith(this, merge)
+    result.mergeWith(other, merge)
+    return result
+}
+
+internal fun Double.suppressDwindlingDigits(): Double {
+    val asString = toString()
+    if (asString.split(".").last().length < 10) return this
+
+    return if (asString.last().digitToInt() < 5) asString.dropLast(1).dropLastWhile { it in ".0" }.toDouble()
+    else asString.dropLast(1).dropLastWhile { it in ".9" }.let { it.dropLast(1) + (it.last().digitToInt()+1) }.toDouble()
+}
+
+internal fun Boolean.toInt() = if (this) 1 else 0

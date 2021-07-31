@@ -5,7 +5,7 @@ open class AstNode {
     val branches: Set<List<String>> get() = branchesStorage
 
     private val childrenStorage = mutableMapOf<String, AstNode>()
-    val children: Map<String, AstNode> get() = childrenStorage
+    private val children: Map<String, AstNode> get() = childrenStorage
     val size get() = children.size
 
     private var contentSet = false

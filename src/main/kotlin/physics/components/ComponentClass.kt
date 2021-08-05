@@ -118,7 +118,7 @@ class ComponentClass(
         return Instance(fields, subcomponents)
     }
 
-    fun inheritsOf(componentClass: ComponentClass): Boolean {
+    infix fun inheritsOf(componentClass: ComponentClass): Boolean {
         return componentClass == this || componentClass in allBases
     }
 

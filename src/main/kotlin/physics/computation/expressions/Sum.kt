@@ -1,10 +1,9 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
 import physics.*
 import physics.UnorderedList
 import physics.binomialCoefficient
 import physics.chain
-import physics.formulas.FormulaArguments
 import physics.isInt
 import physics.values.PhysicalDouble
 
@@ -181,7 +180,7 @@ class Sum(terms: List<Expression>): Expression() {
         return members.ifEmpty { listOf(Const(0)) }
     }
 
-    override fun evaluate(args: FormulaArguments): PhysicalDouble {
+    override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         return members.map { it.evaluate(args) }.reduce(PhysicalDouble::plus)
     }
 

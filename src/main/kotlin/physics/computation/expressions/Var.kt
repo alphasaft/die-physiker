@@ -1,6 +1,5 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
-import physics.formulas.FormulaArguments
 import physics.noop
 import physics.values.PhysicalDouble
 
@@ -12,7 +11,7 @@ class Var(val name: String) : Expression() {
         assertSimplified()
     }
 
-    override fun evaluate(args: FormulaArguments): PhysicalDouble {
+    override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         return args.getValue(name) as PhysicalDouble  // TODO : Check type and add Int support
     }
 

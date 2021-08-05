@@ -1,6 +1,5 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
-import physics.formulas.FormulaArguments
 import physics.values.PhysicalDouble
 import kotlin.math.E
 import kotlin.math.log
@@ -18,7 +17,7 @@ class Log(val x: Expression, val base: Expression = Const(10)) : Expression() {
         }
     }
 
-    override fun evaluate(args: FormulaArguments): PhysicalDouble {
+    override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         val evaluatedX = x.evaluate(args)
         val evaluatedBase = base.evaluate(args)
 

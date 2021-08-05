@@ -1,6 +1,5 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
-import physics.formulas.FormulaArguments
 import physics.noop
 import physics.values.PhysicalDouble
 
@@ -30,7 +29,7 @@ class AllVars(
     private fun variable(i: Int) = variable(i.toString())
     private fun variable(name: String) = genericVariableName.replace("#", name)
 
-    override fun evaluate(args: FormulaArguments): PhysicalDouble {
+    override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         var i = 1
         val collected = mutableListOf<PhysicalDouble>()
         while (variable(i) in args) {

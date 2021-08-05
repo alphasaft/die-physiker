@@ -1,5 +1,6 @@
-package physics.formulas
+package physics.computation
 
+import Couple
 import physics.components.Component
 import physics.components.Field
 import physics.components.PhysicalSystem
@@ -9,11 +10,10 @@ import physics.values.castAs
 
 class DataMapper(
     val name: String,
-    override val requirements: List<Requirement>,
-    variables: List<FormulaVariable>,
-    private val output: String,
+    val requirements: List<Requirement>,
+    private val output: Couple<String>,
     private val mappers: Map<String, (Map<String, PhysicalValue<*>>) -> PhysicalValue<*>>
-) : AbstractPhysicalRelationship() {
+) : PhysicalRelationship() {
     constructor(
         name: String,
         vararg requirements: Requirement,
@@ -22,8 +22,8 @@ class DataMapper(
         mappers: Map<String, (Map<String, PhysicalValue<*>>) -> PhysicalValue<*>>
     ): this(name, requirements.toList(), variables, output, mappers)
 
-    override val inputVariables: List<FormulaVariable> = variables.filter { it.name != output }
-    override val outputVariable: FormulaVariable = variables.single { it.name == output }
+    val inputVariables: List<FormulaVariable> = variables.filter { it.name != output }
+    val outputVariable: FormulaVariable = variables.single { it.name == output }
 
     override fun <T : PhysicalValue<*>> computeFieldValue(
         field: Field<T>,

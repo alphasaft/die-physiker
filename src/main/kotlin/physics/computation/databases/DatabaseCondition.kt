@@ -1,4 +1,4 @@
-package physics.formulas.databases
+package physics.computation.databases
 
 sealed class DatabaseCondition {
     abstract infix fun matches(columnValues: Map<String, String>): Boolean

@@ -1,12 +1,11 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
-import physics.formulas.FormulaArguments
 import physics.values.PhysicalDouble
 
 class Div(val dividend: Expression, val divider: Expression) : Expression() {
     override val members: Collection<Expression> = listOf(dividend, divider)
 
-    override fun evaluate(args: FormulaArguments): PhysicalDouble {
+    override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         return dividend.evaluate(args) / divider.evaluate(args)
     }
 

@@ -1,8 +1,8 @@
 package physics
 
-import physics.formulas.Formula
 import physics.components.Field
-import physics.formulas.PhysicalRelationship
+import physics.computation.FormulaVariable
+import physics.computation.PhysicalRelationship
 import physics.units.PhysicalUnit
 import physics.values.PhysicalValue
 import kotlin.reflect.KClass
@@ -30,7 +30,11 @@ class FieldCastException(field: Field<*>, into: KClass<out PhysicalValue<*>>): F
 
 class UndeclaredComponentException(name: String): FormulaException("No component was declared under name '$name'.")
 
-class NoComponentMatchingRequirementsFoundException(ownerName: String, location: String, requiredFields: List<String>): FormulaException("No component was found in $ownerName.$location that provides known values for fields : ${requiredFields.joinToString(", ")}")
+class NoComponentMatchingRequirementsFoundException(ownerName: String, location: String, requiredFields: Collection<String>): FormulaException("No component was found in $ownerName.$location that provides known values for fields : ${requiredFields.joinToString(", ")}")
 
 class FieldHasUnknownValueException(field: String): FormulaException("Value of field '$field' is unknown.")
+
+class VariableNameCrashError(variable: String) : FormulaException("Got two different values for variable $variable.")
+
+class ComponentAliasCrashError(alias: String) : FormulaException("two or more components were registered under the alias $alias.")
 

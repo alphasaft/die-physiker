@@ -1,6 +1,5 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
-import physics.formulas.FormulaArguments
 import physics.noop
 import physics.values.PhysicalDouble
 
@@ -31,7 +30,7 @@ class Const(val value: PhysicalDouble) : Expression() {
         return ::noop
     }
 
-    override fun evaluate(args: FormulaArguments): PhysicalDouble {
+    override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         return value
     }
 

@@ -1,3 +1,3 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
 class UnsolvableVariable : Exception()

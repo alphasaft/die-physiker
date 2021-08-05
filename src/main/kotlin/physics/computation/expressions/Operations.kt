@@ -1,4 +1,4 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
 operator fun Expression.plus(other: Expression) = Sum(this, other).simplify()
 operator fun Expression.minus(other: Expression) = Sub(this, other).simplify()

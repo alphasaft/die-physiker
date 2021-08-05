@@ -1,6 +1,5 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
-import physics.formulas.FormulaArguments
 import physics.values.PhysicalDouble
 
 class Sub(val left: Expression, val right: Expression) : Expression() {
@@ -22,7 +21,7 @@ class Sub(val left: Expression, val right: Expression) : Expression() {
         return asSum().simplify()
     }
 
-    override fun evaluate(args: FormulaArguments): PhysicalDouble {
+    override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         return left.evaluate(args) - right.evaluate(args)
     }
 

@@ -1,8 +1,7 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
 import physics.UnorderedList
 import physics.chain
-import physics.formulas.FormulaArguments
 import physics.values.PhysicalDouble
 
 
@@ -145,7 +144,7 @@ class Prod(factors: List<Expression>) : Expression() {
         }
     }
 
-    override fun evaluate(args: FormulaArguments): PhysicalDouble {
+    override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         return members.map { it.evaluate(args) }.reduce(PhysicalDouble::times)
     }
 

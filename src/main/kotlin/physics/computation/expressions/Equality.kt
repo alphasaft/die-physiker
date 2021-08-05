@@ -1,8 +1,5 @@
-package physics.formulas
+package physics.computation.expressions
 
-import physics.formulas.expressions.Div
-import physics.formulas.expressions.Expression
-import physics.formulas.expressions.Var
 import physics.values.PhysicalDouble
 
 
@@ -28,7 +25,7 @@ class Equality(
         return variable.hashCode() * 7 + expression.hashCode() * 13
     }
 
-    fun compute(arguments: FormulaArguments): PhysicalDouble {
+    fun compute(arguments: Map<String, PhysicalDouble>): PhysicalDouble {
         return expression.evaluate(arguments)
     }
 

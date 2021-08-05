@@ -1,8 +1,6 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
-import physics.formulas.FormulaArguments
 import physics.values.PhysicalDouble
-import kotlin.math.exp
 
 
 open class Pow(val x: Expression, val exponent: Expression) : Expression() {
@@ -14,7 +12,7 @@ open class Pow(val x: Expression, val exponent: Expression) : Expression() {
         return "$xAsString^$exponentAsString"
     }
 
-    override fun evaluate(args: FormulaArguments): PhysicalDouble {
+    override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         return x.evaluate(args).pow(exponent.evaluate(args))
     }
 

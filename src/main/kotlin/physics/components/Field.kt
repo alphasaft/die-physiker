@@ -1,7 +1,7 @@
 package physics.components
 
 import physics.FieldHasUnknownValueException
-import physics.formulas.PhysicalRelationship
+import physics.computation.PhysicalRelationship
 import physics.values.PhysicalValue
 import kotlin.reflect.KClass
 
@@ -28,7 +28,7 @@ class Field<T : PhysicalValue<*>> private constructor(
         return when {
             _content == null -> "$name (inconnu(e))"
             _obtainedBy == null -> "$name = $_content"
-            else -> "$name = $_content (calculé par $obtainedBy)"
+            else -> "$name = $_content (obtenu(e) par $obtainedBy)"
         }
     }
 

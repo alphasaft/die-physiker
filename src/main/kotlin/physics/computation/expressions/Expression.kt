@@ -1,8 +1,6 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
 import Mapper
-import Predicate
-import physics.formulas.FormulaArguments
 import physics.noop
 import physics.values.PhysicalDouble
 
@@ -38,7 +36,7 @@ sealed class Expression {
         return member in members || members.any { member in it }
     }
 
-    abstract fun evaluate(args: FormulaArguments): PhysicalDouble
+    abstract fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble
 
     protected abstract fun isolateDirectMember(member: Expression): (Expression) -> Expression
     fun isolateVariable(variableName: String): (Expression) -> Expression {

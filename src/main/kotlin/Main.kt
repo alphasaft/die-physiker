@@ -1,9 +1,3 @@
-import physics.components.*
-import physics.formulas.*
-import physics.formulas.expressions.*
-import physics.units.PhysicalUnit
-import physics.values.*
-import kotlin.math.sqrt
 
 
 fun main() {
@@ -44,7 +38,8 @@ fun main() {
     val Atom = ComponentClass(
         "Atom",
         fieldsTemplates = listOf(
-            Field.Template("électrons", PhysicalInt),
+            Field.Template("nom", PhysicalString.any()),
+            Field.Template("Z", PhysicalInt),
             Field.Template("config", PhysicalString.model { it matches Regex("(\\(?\\d[spdl]\\)?\\d+,?\\s*)+") }),
         )
     )
@@ -60,45 +55,33 @@ fun main() {
     val f: PhysicalRelationship = Formula(
         "Masse volumique en fonction de la masse et du volume",
 
-        Requirement(null, Solution, listOf("volume"), "S"),
-        Requirement("S.solutés", Solute, listOf("masse"), "X"),
+        Requirement.single("S", a = Solution, from = null, withVariables = mapOf("V" to "volume")),
+        Requirement.single("X", a = Solute, from = "S.solutés", withVariables = mapOf("m" to "masse")),
 
-        variables = listOf(
-            FormulaVariable("p", "X.masse volumique"),
-            FormulaVariable("m", "X.masse"),
-            FormulaVariable("V", "S.volume"),
-        ),
+        // output = "p" to "X.masse volumique",
+        variables = emptyList(),
 
         expression = "p" equal Var("m") / Var("V")
     )
 
-    val r: PhysicalRelationship = DataMapper(
-        "Config. électronique en fonction du nombre d'électrons",
-
-        Requirement(null, Atom, listOf("électrons"), "A"),
-
-        variables = listOf(
-            FormulaVariable("e", "A.électrons"),
-            FormulaVariable("c", "A.config"),
-        ),
-
-        output = "c",
-
-        mappers = mapOf(
-            "c" to { args: Map<String, PhysicalValue<*>> -> args.values.first() },
-            "e" to { args: Map<String, PhysicalValue<*>> -> PhysicalInt(args.values.first().toPhysicalString()[4].digitToInt()) }
+    val connection = RuntimeDatabaseConnection(
+        columns = listOf("nom", "Z"),
+        lines = listOf(
+            listOf("Hydrogène", "1"),
+            listOf("Hélium", "2")
         )
     )
+    val database = Database("Le tableau périodique des elements", connection)
+
 
     // 1s22s1
     // OU (1s)2(2s)1
     // OU 1s2, 2s1
     // OU (1s)2, (2s)1
 
-    val myAtom = Atom(mapOf("config" to "(1s)1, (2p)2"))
+    val myAtom = Atom(mapOf("Z" to "1"))
     val system = PhysicalSystem(myAtom)
-    val field = myAtom.getField<PhysicalInt>("électrons")
-    r.fillFieldWithItsValue(field, system)
+    val field = myAtom.getField<PhysicalString>("nom")
     println(field)
 
     // TODO : Simply associate words and blah blah blah with concrete components implementation

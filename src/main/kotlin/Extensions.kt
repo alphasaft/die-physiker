@@ -52,13 +52,26 @@ internal operator fun <T, R> List<T>.times(other: List<R>): List<Pair<T, R>> {
     return result
 }
 
+internal fun <K, V> MutableMap<K, V>.mergeWith(other: Map<K, V>, merge: (key: K, old: V, new: V) -> V) {
+    for ((k, v) in other) {
+        this[k] = if (containsKey(k)) merge(k, this.getValue(k), v) else v
+    }
+}
+
 internal fun <K, V> MutableMap<K, V>.mergeWith(other: Map<K, V>, merge: (old: V, new: V) -> V) {
-    for ((k, v) in other) this[k] = if (containsKey(k)) merge(this.getValue(k), v) else v
+    for ((k, v) in other) {
+        this[k] = if (containsKey(k)) merge(this.getValue(k), v) else v
+    }
+}
+
+internal fun <K, V> Map<K, V>.mergedWith(other: Map<K, V>, merge: (key: K, old: V, new: V) -> V): MutableMap<K, V> {
+    val result = this.toMutableMap()
+    result.mergeWith(other, merge)
+    return result
 }
 
 internal fun <K, V> Map<K, V>.mergedWith(other: Map<K, V>, merge: (old: V, new: V) -> V): MutableMap<K, V> {
-    val result = mutableMapOf<K, V>()
-    result.mergeWith(this, merge)
+    val result = this.toMutableMap()
     result.mergeWith(other, merge)
     return result
 }

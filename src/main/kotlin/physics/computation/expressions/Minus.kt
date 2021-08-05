@@ -1,6 +1,5 @@
-package physics.formulas.expressions
+package physics.computation.expressions
 
-import physics.formulas.FormulaArguments
 import physics.values.PhysicalDouble
 
 class Minus(val value: Expression) : Expression() {
@@ -10,7 +9,7 @@ class Minus(val value: Expression) : Expression() {
         return if (value is Const || value is Var || value is Pow) "-$value" else "-($value)"
     }
 
-    override fun evaluate(args: FormulaArguments): PhysicalDouble {
+    override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         return -value.evaluate(args)
     }
 

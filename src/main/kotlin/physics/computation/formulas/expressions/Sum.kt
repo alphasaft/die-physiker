@@ -1,4 +1,4 @@
-package physics.computation.expressions
+package physics.computation.formulas.expressions
 
 import physics.*
 import physics.UnorderedList
@@ -121,7 +121,7 @@ class Sum(terms: List<Expression>): Expression() {
             }
 
             if (constant == null) continue
-            val rootOfConst = constant.pow(Const(1)/a.exponent)
+            val rootOfConst = constant.pow(Const(1) /a.exponent)
             result = applyIdentityTo(result, a.x, rootOfConst, (a.exponent as Const).value.toInt())
         }
 

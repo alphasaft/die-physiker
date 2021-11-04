@@ -1,25 +1,26 @@
 package physics.components
 
 import physics.FieldHasUnknownValueException
-import physics.computation.PhysicalRelationship
+import physics.computation.PhysicalKnowledge
 import physics.values.PhysicalValue
 import kotlin.reflect.KClass
 
 
 class Field<T : PhysicalValue<*>> private constructor(
     val name: String,
-    val type: KClass<T>,
+    val factory: PhysicalValue.Factory<T>,
     initialContent: T? = null
 ) {
     private var _content: T? = initialContent
-    private var _obtainedBy: PhysicalRelationship? = null ; val obtainedBy get() = _obtainedBy
+    private var _obtainedBy: PhysicalKnowledge? = null ; val obtainedBy get() = _obtainedBy
+    val type get() = factory.of
 
     fun isKnown() = _content != null
 
     fun getContentOrNull() = _content
     fun getContent() = _content ?: throw FieldHasUnknownValueException(this.name)
 
-    fun setContent(value: T, obtentionMethod: PhysicalRelationship) {
+    fun setContent(value: T, obtentionMethod: PhysicalKnowledge) {
         _content = value
         _obtainedBy = obtentionMethod
     }
@@ -50,7 +51,7 @@ class Field<T : PhysicalValue<*>> private constructor(
     ) {
         fun newField(value: String? = null): Field<*> {
             val computedValue = value?.let { factory.fromString(it) }
-            return Field(name, factory.of, computedValue)
+            return Field(name, factory, computedValue)
         }
     }
 }

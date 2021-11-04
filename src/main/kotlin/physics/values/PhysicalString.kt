@@ -20,8 +20,8 @@ open class PhysicalString(override val value: String): PhysicalValue<String>, Ch
 
     companion object FactoryProvider {
         private class Factory(
-            val normalizer: Mapper<String> = ::noop,
-            val check: Predicate<String> = ::alwaysTrue,
+            val normalizer: Mapper<String>,
+            val check: Predicate<String>,
         ) : PhysicalValue.Factory<PhysicalString> {
 
             override val of: KClass<PhysicalString> = PhysicalString::class
@@ -31,7 +31,7 @@ open class PhysicalString(override val value: String): PhysicalValue<String>, Ch
             }
         }
 
-        fun any(): PhysicalValue.Factory<PhysicalString> = Factory()
+        fun any(): PhysicalValue.Factory<PhysicalString> = model()
         fun model(normalizer: Mapper<String> = ::noop, check: Predicate<String> = ::alwaysTrue): PhysicalValue.Factory<PhysicalString> = Factory(normalizer, check)
     }
 }

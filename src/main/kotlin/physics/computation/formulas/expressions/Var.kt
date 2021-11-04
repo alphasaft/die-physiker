@@ -1,4 +1,4 @@
-package physics.computation.expressions
+package physics.computation.formulas.expressions
 
 import physics.noop
 import physics.values.PhysicalDouble

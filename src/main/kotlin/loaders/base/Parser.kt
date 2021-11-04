@@ -160,7 +160,7 @@ abstract class Parser {
     }
 
     /**
-     * Repeats from [n] to [m] physics.values.times the given block
+     * Repeats from [n] to [m] times the given block
      *  If [m] is -1 then the block will be executed [n] physics.values.times, then until something fails to parse.
      */
     protected fun between(n: Int, m: Int, groupName: String? = null, separator: String = "", block: () -> Unit) {

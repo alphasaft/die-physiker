@@ -9,7 +9,7 @@ class PhysicalSystem(val components: List<Component>) {
         return (components + components.map { it.allSubcomponents() }.flatten()).toSet()
     }
 
-    fun <T : PhysicalValue<*>> fetchFieldOwner(field: Field<T>): Component {
+    fun <T : PhysicalValue<*>> findFieldOwner(field: Field<T>): Component {
         return allComponents().single { c -> c.fields.any { field === it } }
     }
 }

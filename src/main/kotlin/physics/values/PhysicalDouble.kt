@@ -4,6 +4,7 @@ import physics.roundAt
 import physics.IncompatibleUnitsException
 import physics.isInt
 import physics.units.PhysicalUnit
+import println
 
 import remove
 import suppressDwindlingDigits
@@ -21,7 +22,7 @@ class PhysicalDouble(
     constructor(constant: Double, unit: PhysicalUnit): this(constant, Int.MAX_VALUE, unit)
 
     private val Double.significantDigitsCount get() = toString().remove("-").remove(".").length
-    private val lastAccurateDigit = -significantDigitsCount + exactValue.toString().remove("-").indexOf('.')
+    private val lastAccurateDigit = -significantDigitsCount + scientificNotationOf(exactValue).second + 1
     private val isConstant = significantDigitsCount == Int.MAX_VALUE
 
     override val value = run {
@@ -91,6 +92,7 @@ class PhysicalDouble(
             other.isConstant -> exponent - this.lastAccurateDigit
             else -> (exponent+1) - maxOf(this.lastAccurateDigit, other.lastAccurateDigit)
         }
+
         return PhysicalDouble(sum, significantDigitsCount, unit+other.unit)
     }
 
@@ -98,7 +100,7 @@ class PhysicalDouble(
     operator fun minus(other: Double) = this + -other
     operator fun minus(other: PhysicalDouble) = this + -other
 
-    operator fun unaryPlus() = this
+    operator fun unaryPlus() = PhysicalDouble(exactValue, significantDigitsCount, unit)
     operator fun unaryMinus() = PhysicalDouble(-exactValue, significantDigitsCount, unit)
 
     fun pow(other: Int) = this.pow(other.toDouble())

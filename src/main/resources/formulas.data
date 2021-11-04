@@ -1,22 +1,9 @@
-La formule "p = m/V" pour S une Solution
-    concerne
-        X de S.solutes,
-        S.volume,
-        X.mass,
-        X.density
-    calculant
-        X.density comme X.mass / S.volume : "p = m/V" ,
-        S.volume comme X.mass / X.density : "V = m/p" ,
-        X.mass comme X.density * S.volume : "m = p*V" ,
+La formule "Volume d'une solution = somme des volumes des solutés + volume du solvant"
+    concerne :
+        - S une Solution, avec Vs son volume,
+        - X un Soluté de S.solutes, avec Vx son volume,
+        - A# des Soluté-s de S.solutes, avec Va# leurs volume-s,
+        - Sol un Solvant de S.solvant, avec Vsol son volume,
+    on a :
+        Vs = Vsol + Vx + sum(Va#)
 
-
-La formule "Masse d'une solution = somme des masses des solutés + masse du solvant" pour S une Solution
-    concerne
-        X de S.solutes,
-        A# de S.solutes,
-        S.mass,
-        X.mass,
-        A#.mass
-    calculant
-        X.mass comme S.mass - A#.mass->sum,
-        S.mass comme X.mass + A#.mass->sum,

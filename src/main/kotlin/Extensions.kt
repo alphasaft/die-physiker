@@ -1,4 +1,5 @@
 import java.util.*
+import kotlin.math.pow
 
 internal fun <T> T.ofWhich(check: T.() -> Boolean): T {
     require(check()) { "Constraint wasn't fulfilled for object $this" }
@@ -77,8 +78,19 @@ internal fun <K, V> Map<K, V>.mergedWith(other: Map<K, V>, merge: (old: V, new: 
 }
 
 internal fun Double.suppressDwindlingDigits(): Double {
-    val asString = toString()
+    var asString = toString()
+
     if (asString.split(".").last().length < 10) return this
+
+    val splitOnE = asString.split("E")
+    if (splitOnE.size > 1) {
+        val (coefficient, exponent) = splitOnE.first() to splitOnE.last().toInt()
+        asString = if (exponent < 0) {
+            ("0." + "0".repeat(-exponent - 1) + coefficient.remove(".")).removeSuffix("0")
+        } else {
+            coefficient.remove(".") + "0".repeat(exponent-1)
+        }
+    }
 
     return if (asString.last().digitToInt() < 5) asString.dropLast(1).dropLastWhile { it in ".0" }.toDouble()
     else asString.dropLast(1).dropLastWhile { it in ".9" }.let { it.dropLast(1) + (it.last().digitToInt()+1) }.toDouble()

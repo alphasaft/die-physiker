@@ -1,8 +1,6 @@
 package physics.components
 
-import physics.ComponentGroupNotFoundException
-import physics.FieldCastException
-import physics.FieldNotFoundException
+import physics.*
 import physics.titlecase
 import physics.values.PhysicalValue
 
@@ -12,6 +10,7 @@ import kotlin.reflect.full.isSubclassOf
 
 class ComponentClass(
     val name: String,
+    val abstract: Boolean = false,
     extends: List<ComponentClass> = emptyList(),
     fieldsTemplates: List<Field.Template<*>> = emptyList(),
     subcomponentsGroupsTemplates: List<ComponentGroup.Template> = emptyList(),
@@ -20,6 +19,8 @@ class ComponentClass(
     private val allBases: List<ComponentClass> = bases + bases.map { it.allBases }.flatten()
     private val fieldsTemplates: List<Field.Template<*>> = fieldsTemplates + bases.map { it.fieldsTemplates }.flatten()
     private val subcomponentsGroupsTemplates: List<ComponentGroup.Template> = subcomponentsGroupsTemplates + bases.map { it.subcomponentsGroupsTemplates }.flatten()
+
+    val fields get() = fieldsTemplates.map { it.name }
 
     inner class Instance internal constructor(
         val fields: List<Field<*>>,
@@ -37,7 +38,7 @@ class ComponentClass(
             return (@Suppress("UNCHECKED_CAST") (field as Field<T>))
         }
 
-        inline fun <reified T : PhysicalValue<*>> get(fieldName: String): T = get(fieldName, T::class)
+        inline operator fun <reified T : PhysicalValue<*>> get(fieldName: String): T = get(fieldName, T::class)
         fun <T : PhysicalValue<*>> get(fieldName: String, kClass: KClass<T>): T {
             return getField(fieldName, kClass).getContent()
         }
@@ -110,6 +111,8 @@ class ComponentClass(
         fieldValuesAsStrings: Map<String, String> = emptyMap(),
         subcomponentGroupsContents: Map<String, List<Component>> = emptyMap(),
     ): Instance {
+        if (abstract) throw AbstractComponentInitializationError(name)
+
         fieldValuesAsStrings.keys.find { name -> fieldsTemplates.none { it.name == name } }?.also { throw FieldNotFoundException(it, name) }
         subcomponentGroupsContents.keys.find { name -> subcomponentsGroupsTemplates.none { it.name == name } }?.also { throw ComponentGroupNotFoundException(it, name) }
 

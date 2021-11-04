@@ -1,4 +1,4 @@
-package physics.computation.expressions
+package physics.computation.formulas.expressions
 
 import Mapper
 import physics.noop

@@ -1,14 +1,14 @@
 package physics
 
 import physics.components.Field
-import physics.computation.FormulaVariable
-import physics.computation.PhysicalRelationship
+import physics.computation.PhysicalKnowledge
 import physics.units.PhysicalUnit
 import physics.values.PhysicalValue
 import kotlin.reflect.KClass
 
 
 open class PhysicsException(message: String): Exception(message)
+
 
 open class UnitException(message: String): PhysicsException(message)
 
@@ -18,23 +18,38 @@ class IncompatibleUnitsException(unit1: PhysicalUnit, unit2: PhysicalUnit): Unit
 
 class ConversionNeededException(unit: PhysicalUnit, into: PhysicalUnit): UnitException("A conversion is needed from $unit into $into before proceeding to this operation.")
 
-open class FormulaException(message: String): PhysicsException(message)
 
-class InappropriateFormula(formula: PhysicalRelationship, toCompute: String, causedBy: String? = null): FormulaException("Can't compute $toCompute with $formula and the given fields${ if (causedBy != null) " : $causedBy" else "" }")
+open class KnowledgeException(message: String) : PhysicsException(message)
 
-class FieldNotFoundException(field: String, owner: String): FormulaException("$owner(...) doesn't own field $field")
+class InappropriateKnowledgeException(knowledge: PhysicalKnowledge, toCompute: String, causedBy: String? = null): KnowledgeException("Can't compute $toCompute with $knowledge and the given fields${ if (causedBy != null) " : $causedBy" else "" }")
 
-class ComponentGroupNotFoundException(groupName: String, owner: String): FormulaException("$owner(...) doesn't own a subcomponent group named $groupName")
+class UndeclaredComponentException(name: String): KnowledgeException("No component was declared under name '$name'.")
 
-class FieldCastException(field: Field<*>, into: KClass<out PhysicalValue<*>>): FormulaException("Field $field (type ${field.type.simpleName}) cannot be cast into ${into.simpleName}")
+class NoComponentMatchingRequirementsFoundException(ownerName: String, location: String, requiredFields: Collection<String>): KnowledgeException("No component was found in $ownerName.$location that provides known values for fields : ${requiredFields.joinToString(", ")}")
 
-class UndeclaredComponentException(name: String): FormulaException("No component was declared under name '$name'.")
+class FieldHasUnknownValueException(field: String): KnowledgeException("Value of field '$field' is unknown.")
 
-class NoComponentMatchingRequirementsFoundException(ownerName: String, location: String, requiredFields: Collection<String>): FormulaException("No component was found in $ownerName.$location that provides known values for fields : ${requiredFields.joinToString(", ")}")
+class VariableNameCrashError(variable: String) : KnowledgeException("Got two different values for variable $variable.")
 
-class FieldHasUnknownValueException(field: String): FormulaException("Value of field '$field' is unknown.")
+class ComponentAliasCrashError(alias: String) : KnowledgeException("two or more components were registered under the alias $alias.")
 
-class VariableNameCrashError(variable: String) : FormulaException("Got two different values for variable $variable.")
+internal class EndOfMultiSelection : KnowledgeException("All of the components that meet given requirements were selected")
 
-class ComponentAliasCrashError(alias: String) : FormulaException("two or more components were registered under the alias $alias.")
 
+open class ComponentException(message: String) : PhysicsException(message)
+
+class FieldNotFoundException(field: String, owner: String): ComponentException("$owner(...) doesn't own field $field")
+
+class ComponentGroupNotFoundException(groupName: String, owner: String): ComponentException("$owner(...) doesn't own a subcomponent group named $groupName")
+
+class FieldCastException(field: Field<*>, into: KClass<out PhysicalValue<*>>): ComponentException("Field $field (type ${field.type.simpleName}) cannot be cast into ${into.simpleName}")
+
+class AbstractComponentInitializationError(className: String) : ComponentException("Can't instantiate abstract class $className")
+
+
+
+open class DatabaseException(message: String) : Exception(message)
+
+class ColumnNotFoundException(columnName: String) : DatabaseException("Column $columnName doesn't exist.")
+
+class EmptyQueryResult(column: String, value: PhysicalValue<*>) : DatabaseException("No line was found with $column taking the value $value.")

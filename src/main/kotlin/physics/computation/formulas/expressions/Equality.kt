@@ -1,4 +1,4 @@
-package physics.computation.expressions
+package physics.computation.formulas.expressions
 
 import physics.values.PhysicalDouble
 
@@ -29,8 +29,8 @@ class Equality(
         return expression.evaluate(arguments)
     }
 
-    fun composeWith(equality: Equality): Equality {
-        return Equality(variable, expression.substitute(equality.variable, equality.expression))
+    fun composeWith(equality: Equality, joiningVariable: String = equality.variable): Equality {
+        return Equality(this.variable, expression.substitute(joiningVariable, equality.expression))
     }
 
     fun toFlatString(): String {

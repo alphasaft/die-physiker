@@ -1,4 +1,4 @@
-package physics.computation.expressions
+package physics.computation.formulas.expressions
 
 class Root(x: Expression, private val originalExponent: Expression = Const(2)) : Pow(x, Div(Const(1), originalExponent)) {
     override fun toString(): String {

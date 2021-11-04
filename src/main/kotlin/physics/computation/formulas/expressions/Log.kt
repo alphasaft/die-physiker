@@ -1,4 +1,4 @@
-package physics.computation.expressions
+package physics.computation.formulas.expressions
 
 import physics.values.PhysicalDouble
 import kotlin.math.E
@@ -29,7 +29,7 @@ class Log(val x: Expression, val base: Expression = Const(10)) : Expression() {
     }
 
     override fun isolateDirectMember(member: Expression): (Expression) -> Expression {
-        return if (member === x) {{ base.pow(it) }} else {{ Const(10).pow(Log(x)/it) }}
+        return if (member === x) {{ base.pow(it) }} else {{ Const(10).pow(Log(x) /it) }}
     }
 
     override fun simplifyImpl(): Expression {

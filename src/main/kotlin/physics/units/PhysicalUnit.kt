@@ -6,6 +6,7 @@ import Couple
 import physics.AmbiguousUnitException
 import physics.ConversionNeededException
 import physics.IncompatibleUnitsException
+import toInt
 
 import kotlin.math.pow
 
@@ -14,7 +15,7 @@ class PhysicalUnit(private val signature: UnitSignature) {
     constructor(symbols: String): this(kotlin.run {
         if (symbols.isBlank()) return@run emptyMap()
 
-        val regex = Regex("(\\w+)(-?\\d+)?")
+        val regex = Regex("^(\\w+?)(-?\\d+)?$")
         val signature = mutableMapOf<String, Int>()
         for (symbol in symbols.split(".")) {
             val match = requireNotNull(regex.matchEntire(symbol))
@@ -79,11 +80,11 @@ class PhysicalUnit(private val signature: UnitSignature) {
     }
 
     override fun toString(): String {
-        val orderedSignature = signature.toList().sortedByDescending { it.second }
+        val orderedSignature = signature.toList().sortedBy { it.second + 100 * (it.second < 0).toInt() }
         return orderedSignature.joinToString(".") { (symbol, exponent) -> if (exponent != 1) "$symbol$exponent" else symbol }
     }
 
-    companion object Database {
+    companion object Register {
         private val converters = mutableMapOf<Couple<String>, Double>()
         private val convertingCache = mutableMapOf<Couple<UnitSignature>, Double>()
         private val aliases = mutableMapOf<String, UnitSignature>()

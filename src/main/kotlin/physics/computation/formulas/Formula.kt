@@ -11,6 +11,7 @@ import physics.computation.ComponentRequirement
 import physics.computation.AbstractPhysicalKnowledge
 import physics.computation.formulas.expressions.Equality
 import physics.values.*
+import println
 
 
 class Formula(
@@ -20,6 +21,11 @@ class Formula(
     output: Pair<String, String>,
     val expression: Equality,
 ): AbstractPhysicalKnowledge(
+    when (obtentionMethod) {
+        is ObtentionMethod.Builtin -> obtentionMethod.name
+        is ObtentionMethod.ByCombiningFormulas -> "Combinaison de ${obtentionMethod.formulas.joinToString(", ")}"
+        is ObtentionMethod.ByIsolatingVariable -> obtentionMethod.from.name
+    },
     requirements,
     output
 ) {

@@ -1,28 +1,28 @@
 package loaders.base
 
 import java.io.File
-import java.util.*
 
 abstract class Parser {
-    lateinit var remainingInput: String
-    lateinit var initialInput: String
+    protected lateinit var remainingInput: String
+    private lateinit var initialInput: String
     private val currentCharNo: Int get() = initialInput.length - remainingInput.length
     private var mostAdvancedFailure: SyntaxParsingError? = null
 
-    lateinit var ast: Ast
-    lateinit var astPath: MutableList<String>
+    private lateinit var ast: Ast
+    private lateinit var astPath: MutableList<String>
 
+    protected open val parasiteChars = "\r"
     protected open val whitespaces = " \t"
     protected open val caseInsensitive = false
 
     protected val string = Regex("\".*?\"")
-    protected val identifier = Regex("[a-zA-Z_][a-zA-Z0-9_]*")
+    protected val identifier = Regex("[a-zA-Zéèçàù_][a-zA-Z0-9éèçàù_]*")
     protected val integer = Regex("\\d+")
     protected val float = Regex("\\d[.,]\\d")
 
     fun parse(file: File) = parse(file.readText())
     fun parse(input: String): Ast {
-        initialInput = if (caseInsensitive) input.lowercase() else input
+        initialInput = (if (caseInsensitive) input.lowercase() else input).filterNot { it in parasiteChars }.trim { it in " \t\n\r" }
         remainingInput = initialInput
         ast = prepareAst(input)
         astPath = mutableListOf()
@@ -30,11 +30,11 @@ abstract class Parser {
         axiom()
         eof()
 
-        return ast.apply { lock() }
+        return ast.clean().apply { lock() }
     }
 
     private fun prepareAst(input: String): Ast {
-        return Ast(input)
+        return Ast(input.filterNot { it in parasiteChars })
     }
 
     protected abstract fun axiom()
@@ -92,7 +92,6 @@ abstract class Parser {
         return what
     }
 
-    protected fun consume(what: Regex) = consumeRegex(what.pattern)
     protected fun consumeRegex(what: Regex) = consumeRegex(what.pattern)
     protected fun consumeRegex(what: String): String {
         val regex = Regex("^$what", options = if (caseInsensitive) setOf(RegexOption.IGNORE_CASE) else emptySet())
@@ -161,13 +160,13 @@ abstract class Parser {
 
     /**
      * Repeats from [n] to [m] times the given block
-     *  If [m] is -1 then the block will be executed [n] physics.values.times, then until something fails to parse.
+     *  If [m] is -1 then the block will be executed [n] times, then until something fails to parse.
      */
     protected fun between(n: Int, m: Int, groupName: String? = null, separator: String = "", block: () -> Unit) {
         require(m == -1 || (m > 0 && m >= n)) { "m should be -1 or greater than 0, and for the latter case greater than or equal to n."}
         require(groupName == null || '#' in groupName) { "groupName for repeatable blocks should be null or include '#'."}
 
-        fun generateBodyForIteration(iterationNo: Int, beginsWithSeparator: Boolean = true): () -> Unit {
+        fun generateBodyForIteration(iterationNo: Int, beginsWithSeparator: Boolean): () -> Unit {
             return {
                 group(groupName?.replace("#", (iterationNo+1).toString())) {
                     if (beginsWithSeparator) consume(separator)

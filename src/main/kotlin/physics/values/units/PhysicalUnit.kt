@@ -1,4 +1,4 @@
-package physics.units
+package physics.values.units
 
 import mergeWith
 import mergedWith

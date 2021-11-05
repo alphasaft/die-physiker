@@ -3,6 +3,7 @@ package physics.computation
 import mergeWith
 import mergedWith
 import physics.ComponentAliasCrashError
+import physics.InappropriateKnowledgeException
 import physics.VariableNameCrashError
 import physics.components.Component
 import physics.components.Field
@@ -10,9 +11,11 @@ import physics.components.PhysicalSystem
 import physics.computation.formulas.Formula
 import physics.values.PhysicalValue
 import physics.values.castAs
+import println
 
 
 abstract class AbstractPhysicalKnowledge(
+    override val name: String,
     protected val requirements: List<ComponentRequirement>,
     output: Pair<String, String>,
 ) : PhysicalKnowledge {
@@ -63,12 +66,15 @@ abstract class AbstractPhysicalKnowledge(
     }
 
     protected fun findVariableCorrespondingTo(field: String, owner: Component): String {
+        if (field == outputField && owner instanceOf requirementCorrespondingToOutput.type) return outputVariable
+
         for (requirement in requirements.filter { !it.selectAll && owner instanceOf it.type }) {
             for ((variable, backingField) in requirement.ownedVariables) {
                 if (backingField == field) return variable
             }
         }
-        return outputVariable
+
+        throw InappropriateKnowledgeException(this, field, "Can't find variable corresponding to field $field for component of type ${owner.name}")
     }
 
     protected fun refactorRequirementsToIsolateVariable(variable: String): List<ComponentRequirement> {

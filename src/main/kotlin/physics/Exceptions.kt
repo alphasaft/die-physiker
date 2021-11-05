@@ -2,7 +2,7 @@ package physics
 
 import physics.components.Field
 import physics.computation.PhysicalKnowledge
-import physics.units.PhysicalUnit
+import physics.values.units.PhysicalUnit
 import physics.values.PhysicalValue
 import kotlin.reflect.KClass
 
@@ -52,4 +52,4 @@ open class DatabaseException(message: String) : Exception(message)
 
 class ColumnNotFoundException(columnName: String) : DatabaseException("Column $columnName doesn't exist.")
 
-class EmptyQueryResult(column: String, value: PhysicalValue<*>) : DatabaseException("No line was found with $column taking the value $value.")
+class EmptyQueryResult(table: String, column: String, value: PhysicalValue<*>) : DatabaseException("No line was found in table '$table' with '$column' taking the value '$value'.")

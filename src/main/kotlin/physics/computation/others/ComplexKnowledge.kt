@@ -1,5 +1,7 @@
 package physics.computation.others
 
+import physics.InappropriateKnowledgeException
+import physics.KnowledgeException
 import physics.components.Component
 import physics.components.Field
 import physics.components.PhysicalSystem
@@ -10,11 +12,12 @@ import physics.values.PhysicalValue
 import physics.values.castAs
 
 class ComplexKnowledge(
-    val name: String,
+    name: String,
     requirements: List<ComponentRequirement>,
     output: Pair<String, String>,
     private val mappers: Map<String, (Map<String, PhysicalValue<*>>) -> PhysicalValue<*>>,
 ) : AbstractPhysicalKnowledge(
+    name,
     requirements,
     output,
 ) {
@@ -47,8 +50,12 @@ class ComplexKnowledge(
 
     override fun compute(field: Field<*>, system: PhysicalSystem): PhysicalValue<*> {
         val fieldOwner = system.findFieldOwner(field)
-        val arguments = fetchVariablesValuesIn(system, fieldOwner)
-        return mainMapper(arguments)
+        try {
+            val arguments = fetchVariablesValuesIn(system, fieldOwner)
+            return mainMapper(arguments)
+        } catch (e: KnowledgeException) {
+            throw InappropriateKnowledgeException(this, field.name, e.message)
+        }
     }
 
     override fun toString(): String {

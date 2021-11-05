@@ -1,5 +1,4 @@
 import java.util.*
-import kotlin.math.pow
 
 internal fun <T> T.ofWhich(check: T.() -> Boolean): T {
     require(check()) { "Constraint wasn't fulfilled for object $this" }

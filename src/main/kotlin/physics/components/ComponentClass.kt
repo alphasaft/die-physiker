@@ -1,8 +1,10 @@
 package physics.components
 
 import physics.*
+import physics.computation.PhysicalKnowledge
 import physics.titlecase
 import physics.values.PhysicalValue
+import println
 
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
@@ -28,6 +30,7 @@ class ComponentClass(
     ) {
         val componentClass = this@ComponentClass
         val name = componentClass.name
+        private val knownFieldsCount: Int get() = fields.count { it.isKnown() } + subcomponentsGroups.sumOf { g -> g.content.sumOf { c -> c.knownFieldsCount } }
 
         @JvmName("getFieldAsPhysicalValue")
         fun getField(fieldName: String) = getField<PhysicalValue<*>>(fieldName)
@@ -61,6 +64,27 @@ class ComponentClass(
             subcomponentsGroups
                 .map { it.content.map { c -> c.allSubcomponents() + c }.flatten() }
                 .flatten()
+
+        fun fillFieldsWithTheirValuesUsing(knowledge: List<PhysicalKnowledge>, system: PhysicalSystem = PhysicalSystem(this)) {
+            var oldKnownFieldsCount = knownFieldsCount
+            while (true) {
+                for (anyKnowledge in knowledge) {
+                    for (field in fields) {
+                        if (field.isKnown()) continue
+                        try { anyKnowledge.fillFieldWithItsValue(field, system) }
+                        catch (e: KnowledgeException) { continue }
+                        break
+                    }
+
+                    for (group in subcomponentsGroups) for (component in group.content) {
+                        component.fillFieldsWithTheirValuesUsing(knowledge, system)
+                    }
+                }
+
+                if (knownFieldsCount == oldKnownFieldsCount) break
+                oldKnownFieldsCount = knownFieldsCount
+            }
+        }
 
         operator fun contains(subcomponent: Component): Boolean =
             subcomponentsGroups.any { subcomponent in it }

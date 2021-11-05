@@ -1,6 +1,6 @@
 package physics.values
 
-import physics.units.PhysicalUnit
+import physics.values.units.PhysicalUnit
 
 operator fun Int.plus(other: PhysicalDouble) = other + this
 operator fun Double.plus(other: PhysicalDouble) = other + this

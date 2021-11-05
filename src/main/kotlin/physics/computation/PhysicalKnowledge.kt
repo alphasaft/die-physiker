@@ -8,6 +8,8 @@ import physics.values.castAs
 
 
 interface PhysicalKnowledge {
+    val name: String
+
     fun <T : PhysicalValue<*>> getFieldValue(field: Field<T>, system: PhysicalSystem): Pair<T, PhysicalKnowledge>
 
     fun <T : PhysicalValue<*>> fillFieldWithItsValue(field: Field<T>, system: PhysicalSystem) {

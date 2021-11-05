@@ -1,5 +1,6 @@
 package loaders.base
 
+
 open class AstNode {
     protected val branchesStorage = mutableSetOf<List<String>>()
     val branches: Set<List<String>> get() = branchesStorage
@@ -19,13 +20,28 @@ open class AstNode {
 
     private var locked = false
 
-    fun lock() {
+    internal fun lock() {
         locked = true
         for (child in children.values) child.lock()
     }
 
     protected fun requireUnlocked() {
         if (locked) throw IllegalArgumentException("Can't mutate immutable node $this")
+    }
+
+    internal open fun clean(): AstNode {
+        return if (children.isEmpty()) AstLeaf(content!!)
+        else AstNode().apply {
+            content = this@AstNode.content
+            childrenStorage.putAll(this@AstNode.children.mapValues { (_, c) -> c.clean() })
+        }
+    }
+
+    internal fun toAst(): Ast {
+        return Ast(content!!).apply {
+            for ((nodeName, node) in this@AstNode.children)
+                this@apply.setNode(nodeName, node)
+        }
     }
 
     private fun addAllBranchesFor(branchPath: List<String>, node: AstNode) {

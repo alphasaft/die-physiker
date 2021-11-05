@@ -3,7 +3,7 @@ package physics.computation.databases.connections
 import java.io.File
 
 
-class FileStoredDatabase(
+class FileDatabaseConnection(
     fileName: String,
     separator: String = ","
 ) : DatabaseConnection() {
@@ -11,7 +11,7 @@ class FileStoredDatabase(
         val linesAndHeader = File(System.getProperty("user.dir") + "\\src\\main\\resources\\" + fileName)
             .readLines()
             .filterNot { it.isBlank() }
-            .map { it.split("(?!\\)$separator") }
+            .map { it.split(Regex("(?!\\\\)$separator")) }
 
         val columnNames = linesAndHeader.first().map { it.trim() }
         val lines = linesAndHeader.drop(1)

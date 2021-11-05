@@ -1,17 +1,20 @@
+import loaders.FormulaParser
 import physics.components.ComponentClass
 import physics.components.ComponentGroup
 import physics.components.Field
-import physics.components.PhysicalSystem
 import physics.computation.formulas.Formula
 import physics.computation.ComponentRequirement
 import physics.computation.databases.Database
+import physics.computation.databases.DatabaseOptions
 import physics.computation.formulas.expressions.*
 import physics.computation.others.ComplexKnowledge
-import physics.units.PhysicalUnit
+import physics.values.units.PhysicalUnit
 import physics.values.PhysicalDouble
 import physics.values.PhysicalInt
 import physics.values.PhysicalString
-import physics.values.PhysicalValue
+import java.io.File
+import java.lang.StringBuilder
+import kotlin.math.min
 
 
 fun main() {
@@ -76,7 +79,7 @@ fun main() {
     )
 
     val formula1 = Formula(
-        name = "volume truc",
+        name = "Volume = somme des volumes des constituants",
 
         ComponentRequirement.single("S", type = Solution, location = null, variables = mapOf("Vs" to "volume")),
         ComponentRequirement.single("Sol", type = Solvant, location = "S.solvant", variables = mapOf("Vsol" to "volume")),
@@ -101,7 +104,9 @@ fun main() {
 
 
     val tbl = Database(
-        "Tableau périodique",
+        "Tableau périodique des éléments",
+
+        options = DatabaseOptions.CASE_INSENSITIVE + DatabaseOptions.NORMALIZE,
 
         from = "PeriodicTableOfElements.csv",
         given = Atome,
@@ -112,59 +117,63 @@ fun main() {
     )
 
     val myComplexKnowledge = ComplexKnowledge(
-        "Zebi",
+        "Lecture et écriture d'une configuration électronique",
 
         ComponentRequirement.single("X", type = Atome, location = null, variables = mapOf("Z" to "Z")),
-        output = "c" to "X.configuration électronique",
+        output = "config" to "X.configuration électronique",
 
         mappers = mapOf(
-            "c" to mapper@{ args ->
-                val Z = args["Z"] as PhysicalInt
-                return@mapper if (Z.value % 2 == 0) PhysicalString("even") else PhysicalString("odd")
+            "config" to mapper@{ args ->
+                var remainingElectrons = (args["Z"] as PhysicalInt).value
+                val subshellNames = mapOf(0 to "s", 1 to "p", 2 to "d", 3 to "f")
+                val config = StringBuilder()
+
+                var currentEnergyLevel = 1
+                var shell = 1
+                var subshell = 0
+
+                while (remainingElectrons > 0) {
+                    val electronsOnTheSubshell = min(4*subshell + 2, remainingElectrons)
+                    remainingElectrons -= electronsOnTheSubshell
+
+                    config.append("($shell${subshellNames[subshell]})$electronsOnTheSubshell")
+                    shell++
+                    subshell--
+
+                    if (subshell < 0) {
+                        currentEnergyLevel++
+                        shell = currentEnergyLevel / 2 + 1
+                        subshell = currentEnergyLevel - shell
+                    }
+                }
+
+                return@mapper PhysicalString(config.toString())
             },
+
             "Z" to mapper@{ args ->
-                val c = args["c"] as PhysicalString
-                return@mapper PhysicalInt(if (c.value == "odd") 1 else 2)
+                val config = args["config"] as PhysicalString
+                return@mapper PhysicalInt(config.split(")").sumOf { it.split("(").first().ifEmpty { "0" }.toInt() })
             }
         )
     )
 
+    val knowledge = listOf(formula1, formula2, tbl, myComplexKnowledge)
+
     val solvant = Solvant(fieldValuesAsStrings = mapOf("volume" to "0.70 L"))
     val solute1 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.20 L", "masse" to "20 g"))
-    val solute2 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.30 L"))
+    val solute2 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.30 L", "masse volumique" to "20 g.L-1"))
     val solute3 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.30 L"))
     val solutes = listOf(solute1, solute2, solute3)
     val solution = Solution(subcomponentGroupsContents = mapOf("solutés" to solutes, "solvant" to listOf(solvant)))
-    val system1 = PhysicalSystem(solution)
+    val atome = Atome(fieldValuesAsStrings = mapOf("Z" to "29"))
 
-    val atome = Atome(fieldValuesAsStrings = mapOf("configuration électronique" to "even"))
-    val system2 = PhysicalSystem(atome)
+    solution.fillFieldsWithTheirValuesUsing(knowledge)
+    atome.fillFieldsWithTheirValuesUsing(knowledge)
 
-    formula1.fillFieldWithItsValue(solution.getField("volume"), system = system1)
-    formula2.fillFieldWithItsValue(solute1.getField("masse volumique"), system = system1)
-    println(solute1.getField("masse volumique"))
-
-    println(myComplexKnowledge.getFieldValue(atome.getField("Z"), system2))
-
-    /*
-    fun getPrime(n: Int): Int {
-        val primes = mutableListOf(2, 3)
-        while (primes.size < n) {
-            var nextPrime = primes.last() + 2
-            while (true) {
-                if (primes.none { nextPrime % it == 0 }) {
-                    primes.add(nextPrime)
-                    break
-                } else nextPrime += 2
-            }
-        }
-        return primes.last()
-    }
-
-    println(getPrime(100))
-
-     */
-
-    // TODO : Comment faire un Rubik's cube ?
-
+    println(solution)
+    println()
+    println(atome)
+    println()
+    println(FormulaParser().parse(File(cwd() + "\\resources\\formulas.data")))
 }
+

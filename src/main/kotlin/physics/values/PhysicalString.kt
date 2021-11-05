@@ -4,7 +4,7 @@ import Mapper
 import Predicate
 import physics.alwaysTrue
 import physics.noop
-import physics.units.PhysicalUnit
+import physics.values.units.PhysicalUnit
 import java.lang.IllegalArgumentException
 import kotlin.reflect.KClass
 

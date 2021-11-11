@@ -3,27 +3,39 @@ package physics.computation
 import physics.EndOfMultiSelection
 import physics.NoComponentMatchingRequirementsFoundException
 import physics.UndeclaredComponentException
+import physics.alwaysTrue
 import physics.components.Component
 import physics.components.ComponentClass
 import physics.components.Field
 import physics.components.PhysicalSystem
 import physics.values.PhysicalValue
-import println
+import java.util.function.Predicate
 
 class ComponentRequirement private constructor(
     val alias: String,
     internal val type: ComponentClass,
-    private val fullLocation: String?,
+    internal val location: Location,
     val ownedVariables: Map<String, String>,
+    private val condition: (Component, Map<String, Component>) -> Boolean,
     val selectAll: Boolean = false,
-    val forbiddenOverlappingAliases: Set<String>,
+    private val forbiddenOverlappingAliases: Set<String>,
 ) {
     companion object Factory {
-        fun single(alias: String, type: ComponentClass, location: String?, variables: Map<String, String>) =
-            ComponentRequirement(alias, type, location, variables, selectAll = false, emptySet())
+        fun single(
+            alias: String,
+            type: ComponentClass,
+            location: Location,
+            variables: Map<String, String>,
+            condition: (Component, Map<String, Component>) -> Boolean = ::alwaysTrue
+        ) = ComponentRequirement(alias, type, location, variables, condition, selectAll = false, emptySet())
 
-        fun allRemaining(alias: String, type: ComponentClass, location: String?, variables: Map<String, String>) =
-            ComponentRequirement(alias, type, location, variables, selectAll = true, emptySet())
+        fun allRemaining(
+            alias: String,
+            type: ComponentClass,
+            location: Location,
+            variables: Map<String, String>,
+            condition: (Component, Map<String, Component>) -> Boolean = ::alwaysTrue
+        ) = ComponentRequirement(alias, type, location, variables, condition, selectAll = true, emptySet())
     }
 
     init {
@@ -39,34 +51,41 @@ class ComponentRequirement private constructor(
         }
     }
 
-    val isLocatedAtRoot get() = fullLocation == null
-    internal val ownerAlias = fullLocation?.split(".")?.first()
-    val location = fullLocation?.split(".")?.last()
+    val canBeLocatedAnywhere get() = location is Location.Any
+    private val preciseLocation get() = location as Location.At
 
-    infix fun matches(component: Component): Boolean = component instanceOf type && ownedVariables.values.all { component.getOrNull<PhysicalValue<*>>(it) != null }
-    infix fun requiresField(field: String) = ownedVariables.values.any { it == field }
+    private fun matches(component: Component, alreadySelected: Map<String, Component>): Boolean =
+        (component instanceOf type
+        && ownedVariables.values.all { component.getOrNull<PhysicalValue<*>>(it) != null }
+        && condition(component, alreadySelected))
 
     fun selectAppropriateComponentsIn(
         system: PhysicalSystem,
         alreadySelected: Map<String, Component>,
     ): Map<String, Component> {
+        if (alias in alreadySelected && !this.matches(alreadySelected.getValue(alias), alreadySelected)) {
+            val ownerAlias = if (location is Location.At) location.alias else "<root>"
+            val fieldLocation = if (location is Location.At) location.field else "<all>"
+            throw NoComponentMatchingRequirementsFoundException(ownerAlias, fieldLocation, ownedVariables.values)
+        }
+
         return if (selectAll) selectAllIn(system, alreadySelected)
         else when {
-            ownerAlias == null -> if (alias !in alreadySelected) mapOf(selectAtRootIn(system)) else emptyMap()
+            canBeLocatedAnywhere -> if (alias !in alreadySelected) mapOf(selectAtRootIn(system, alreadySelected)) else emptyMap()
             alias in alreadySelected -> mapOf(selectParentIn(system, alreadySelected))
-            ownerAlias in alreadySelected -> mapOf(selectSingleIn(ownerAlias, alias, alreadySelected))
+            preciseLocation.alias in alreadySelected -> mapOf(selectSingleIn(preciseLocation.alias, alias, alreadySelected))
             else -> throw NoWhenBranchMatchedException()
         }
     }
 
-    private fun selectAtRootIn(system: PhysicalSystem): Pair<String, Component> =
-        alias to (system.components.find { this matches it } ?: throw NoComponentMatchingRequirementsFoundException("<root>", "<all>", ownedVariables.values))
+    private fun selectAtRootIn(system: PhysicalSystem, alreadySelected: Map<String, Component>): Pair<String, Component> =
+        alias to (system.components.find { this.matches(it, alreadySelected) } ?: throw NoComponentMatchingRequirementsFoundException("<root>", "<all>", ownedVariables.values))
 
     private fun indexed(s: String, i: Int) = s.replace("#", i.toString())
 
     private fun selectAllIn(system:PhysicalSystem, alreadySelected: Map<String, Component>): Map<String, Component> {
-        if (ownerAlias == null) return system.components
-            .filter { this matches it }
+        if (canBeLocatedAnywhere) return system.allComponents()
+            .filter { this.matches(it, alreadySelected) }
             .mapIndexed { i, it -> indexed(alias, i) to it }
             .toMap()
 
@@ -76,7 +95,8 @@ class ComponentRequirement private constructor(
         val result = mutableMapOf<String, Component>()
         while (true) {
             val found =
-                try { selectSingleIn(ownerAlias, indexed(alias, i), alreadySelectedAsMutableMap) }
+                try {
+                    selectSingleIn(preciseLocation.alias, indexed(alias, i), alreadySelectedAsMutableMap) }
                 catch (e: EndOfMultiSelection) { break }
 
             result[found.first] = found.second
@@ -92,12 +112,9 @@ class ComponentRequirement private constructor(
         storeAs: String,
         alreadySelected: Map<String, Component>,
     ): Pair<String, Component> {
-        requireNotNull(ownerAlias)
-        requireNotNull(location)
-
-        val selectedOwner = alreadySelected[owner] ?: throw UndeclaredComponentException(ownerAlias)
-        val subcomponentsGroup = selectedOwner.getSubcomponentGroup(location)
-        val selected = subcomponentsGroup.filter { this matches it }
+        val selectedOwner = alreadySelected[owner] ?: throw UndeclaredComponentException(preciseLocation.alias)
+        val subcomponentsGroup = selectedOwner.getSubcomponentGroup(preciseLocation.field)
+        val selected = subcomponentsGroup.filter { this.matches(it, alreadySelected) }
 
         fun isAlreadySelected(component: Component): Boolean =
             alreadySelected.any { (alias, otherComponent) ->
@@ -108,18 +125,15 @@ class ComponentRequirement private constructor(
         if (selected.all(::isAlreadySelected) && selectAll) throw EndOfMultiSelection()
         else return storeAs to (selected
                     .firstOrNull { !isAlreadySelected(it) }
-                    ?: throw NoComponentMatchingRequirementsFoundException(owner, location, ownedVariables.values))
+                    ?: throw NoComponentMatchingRequirementsFoundException(owner, preciseLocation.field, ownedVariables.values))
     }
 
     private fun selectParentIn(system: PhysicalSystem, alreadySelected: Map<String, Component>): Pair<String, Component> {
-        requireNotNull(ownerAlias)
-        requireNotNull(location)
-
         val that = alreadySelected.getValue(alias)
-        return ownerAlias to system
+        return preciseLocation.alias to system
             .allComponents()
-            .filter { it.hasSubcomponentGroup(location) }
-            .first { that in it.getSubcomponentGroup(location) }
+            .filter { it.hasSubcomponentGroup(preciseLocation.field) }
+            .first { that in it.getSubcomponentGroup(preciseLocation.field) }
     }
 
     fun fetchVariablesValuesIn(selectedComponents: Map<String, Component>): Map<String, PhysicalValue<*>> {
@@ -152,24 +166,26 @@ class ComponentRequirement private constructor(
     private fun copy(
         alias: String = this.alias,
         type: ComponentClass = this.type,
-        ownerAlias: String? = this.ownerAlias,
-        location: String? = this.location,
+        locationAlias: String? = if (canBeLocatedAnywhere) null else this.preciseLocation.alias,
+        locationField: String? = if (canBeLocatedAnywhere) null else this.preciseLocation.field,
         ownedVariables: Map<String, String> = this.ownedVariables,
+        condition: (Component, Map<String, Component>) -> Boolean = this.condition,
         selectAll: Boolean = this.selectAll,
         forbiddenOverlappingAliases: Set<String> = this.forbiddenOverlappingAliases,
     ) =
         ComponentRequirement(
             alias,
             type,
-            if (ownerAlias == null) null else "$ownerAlias.$location",
+            if (locationAlias == null || locationField == null) Location.Any else Location.At(locationAlias, locationField),
             ownedVariables,
+            condition,
             selectAll,
             forbiddenOverlappingAliases
         )
 
     fun fuseWith(other: ComponentRequirement): ComponentRequirement {
         require(type inheritsOf other.type) { "Can't fuse requirement of type $type and ${other.type}" }
-        require(location == other.location) { "Can't fuse requirements that aren't located in the same place." }
+        require(preciseLocation == other.preciseLocation) { "Can't fuse requirements that aren't located in the same place." }
         require(!selectAll && !other.selectAll) { "Can't fuse multi-requirements." }
 
         // TODO : Avoid name crashes
@@ -183,9 +199,14 @@ class ComponentRequirement private constructor(
     fun withAliasReferenceUpdated(old: String, new: String) = withAliasesReferencesUpdated(mapOf(old to new))
     fun withAliasesReferencesUpdated(oldAliasesLinkedToNewOnes: Map<String, String>): ComponentRequirement {
         val newAlias = oldAliasesLinkedToNewOnes[alias] ?: alias
-        val newOwnerAlias = oldAliasesLinkedToNewOnes[ownerAlias] ?: ownerAlias
-        val newForbiddenOverlappingAliases = forbiddenOverlappingAliases.map { oldAliasesLinkedToNewOnes[it] ?: it }.toSet()
-        return copy(alias = newAlias, ownerAlias = newOwnerAlias, forbiddenOverlappingAliases = newForbiddenOverlappingAliases)
+        val newOwnerAlias = oldAliasesLinkedToNewOnes[preciseLocation.alias] ?: preciseLocation.alias
+        val newForbiddenOverlappingAliases =
+            forbiddenOverlappingAliases.map { oldAliasesLinkedToNewOnes[it] ?: it }.toSet()
+        return copy(
+            alias = newAlias,
+            locationAlias = newOwnerAlias,
+            forbiddenOverlappingAliases = newForbiddenOverlappingAliases
+        )
     }
 
     fun withOptionalVariable(variable: String) = withOptionalVariables(listOf(variable))

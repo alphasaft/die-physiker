@@ -7,13 +7,17 @@ import physics.values.PhysicalValue
 import physics.values.castAs
 
 
-interface PhysicalKnowledge {
-    val name: String
+abstract class PhysicalKnowledge {
+    abstract val name: String
+    
+    abstract fun <T : PhysicalValue<*>> getFieldValue(field: Field<T>, system: PhysicalSystem): Triple<T, PhysicalKnowledge, String>
 
-    fun <T : PhysicalValue<*>> getFieldValue(field: Field<T>, system: PhysicalSystem): Pair<T, PhysicalKnowledge>
+    open fun <T : PhysicalValue<*>> renderFor(field: Field<T>, system: PhysicalSystem): String {
+        return toString()
+    }
 
-    fun <T : PhysicalValue<*>> fillFieldWithItsValue(field: Field<T>, system: PhysicalSystem) {
-        val (value, computedWith) = getFieldValue(field, system)
-        field.setContent(value.castAs(field.type), computedWith)
+    open fun <T : PhysicalValue<*>> fillFieldWithItsValue(field: Field<T>, system: PhysicalSystem) {
+        val (value, computedWith, representation) = getFieldValue(field, system)
+        field.setContent(value.castAs(field.type), computedWith, representation)
     }
 }

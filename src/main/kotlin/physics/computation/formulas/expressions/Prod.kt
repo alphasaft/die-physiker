@@ -13,7 +13,7 @@ class Prod(factors: List<Expression>) : Expression() {
     override fun toString(): String {
         val constants = members.filterIsInstance<Const>()
         val variables = members.filter { it is Var || it is Pow && it.x is Var }
-        val sumAndSubs = members.filter { it is Sum || it is Sub || it is AllVars && it.collectorName == "sum" }
+        val sumAndSubs = members.filter { it is Sum || it is Sub || it is All && it.collectorName == "sum" }
         val others = members.filterOut(sumAndSubs + constants + variables)
         val buffer = StringBuffer()
 

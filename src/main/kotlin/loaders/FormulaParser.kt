@@ -2,17 +2,23 @@ package loaders
 
 import loaders.base.Parser
 
-class FormulaParser : Parser() {
+
+object FormulaParser : Parser() {
     override fun axiom() {
         header()
         consume("\n")
         group("requirements") { requirements() }
         consume("\n")
         equality()
+        optional {
+            consume("\n")
+            adaptableVariables()
+        }
     }
 
     private fun header() {
         consume("La"); consume("formule")
+        optional { consume("implicite") ; "yes" [ "implicit" ] }
         consumeRegex(string).trim('"')  [ "name" ]
     }
 
@@ -38,12 +44,16 @@ class FormulaParser : Parser() {
     private fun variables() {
         consume("avec")
         oneOrMore("variable-#", separator = ",") {
-            consumeRegex("[\\w#]+")  [ "variableName" ]
-            consumeRegex("(son|sa|leurs|leur) ")
-            consumeRegex("[\\w ]+")  [ "field" ]
-
-            optional { consume("-s") }
+            variable()
         }
+    }
+
+    private fun variable() {
+        consumeRegex("[\\w#]+")  [ "variableName" ]
+        consumeRegex("(son|sa|leurs|leur) ")
+        consumeRegex("[\\w ]+")  [ "field" ]
+
+        optional { consume("-s") }
     }
 
     private fun equality() {
@@ -51,43 +61,69 @@ class FormulaParser : Parser() {
 
         consumeRegex(identifier)  [ "outputVariable" ]
         consume("=")
-        expression()
+
+        group("expression") {
+            expression()
+        }
     }
 
-    // TODO : Improve the AllVars class to allow it to perform complexer operations
-    // TODO : Tell the anecdote about the odds of getting sick with or without the vaccines
     private fun expression() {
-        group("expression") {
-            group("operand-1") { operand() }
+        group("operand-1") { operand() }
 
-            var i = 2
-            oneOrMore {
-                group("operator-${i-1}") { operator() }
-                group("operand-$i") { operand() }
-                i++
-            }
+        var i = 2
+        zeroOrMore {
+            group("operator-${i-1}") { operator() }
+            group("operand-$i") { operand() }
+            i++
         }
     }
 
     private fun operand() {
+        var type: String? = null
+
         choice {
-            option { multiVariablesCollector() }
-            option { consumeRegex(identifier) [ "variable" ] }
-            option { consumeRegex(float)      [ "float" ]    }
-            option { consumeRegex(integer)    [ "integer" ]  }
-            option { consume("(") ; expression() ; consume(")") }
+            option {
+                multiVariablesCollector()
+                type = "multiVariablesCollector"
+            }
+            option {
+                consumeRegex("[a-zA-Z_#][a-zA-Z0-9_#]*") [ "variableName" ]
+                type = "variable"
+            }
+            option {
+                consumeRegex(double)  [ "value" ]
+                type = "double"
+            }
+            option {
+                consumeRegex(integer)  [ "value" ]
+                type = "integer"
+            }
+            option {
+                consume("(")
+                group("subexpression") { expression() }
+                consume(")")
+                type = "expression"
+            }
         }
+
+        type!!  [ "type" ]
     }
 
     private fun multiVariablesCollector() {
-        group("multiVariablesCollector") {
-            consumeRegex("[\\w#]+")  [ "variableName" ]
-            consume("}")
-            consumeRegex(identifier)  [ "collector" ]
-        }
+        consume("(")
+        group("genericExpression") { expression() }
+        consume("}")
+        consumeRegex(identifier)  [ "collector" ]
     }
 
     private fun operator() {
         consumeRegex("([\\-+*/]|\\*\\*)")
+    }
+
+    private fun adaptableVariables() {
+        consumeSentence("variables adaptables :")
+        group("adaptableVariables") {
+            oneOrMore("adaptableVariable-#", ",") { consumeRegex(identifier) }
+        }
     }
 }

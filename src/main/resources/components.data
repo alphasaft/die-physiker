@@ -1,30 +1,29 @@
-Root component Solution
-    owns
-        a mass (Double)
-    subcomponents
-        {1} solvent (Liquid)
-        {+} solutes (Solute)
-    proxies
-        volume -> solvent
+Le composant abstrait Liquide
+    possède :
+        - un volume (Double : L) noté V
+    représentation :
+        son volume
 
 
-Component Solute
-    owns
-        a mass (Double)
-        a density (Double)
+Le composant Soluté
+    possède :
+        - une masse (Double : kg)
 
 
-Component Liquid
-    owns
-        a volume (Double)
+Le composant Solution étendant Liquide
+    possède :
+        - une masse (Double : kg)
+        - un nom (String)
+    sous-composants :
+        - 1 solvant (Liquide)
+        - 0+ solutés (Soluté)
 
 
-Component Molecule
-    subcomponents
-        {+} atoms (Atom)
 
+Le composant Atome
+    possède :
+        - un nom (String)
+        - un symbole (String)
+        - un numéro atomique (Int) noté Z
+        - une masse molaire (Double : g.mol-1) noté "M(?)|M"
 
-Component Atom
-    owns
-        a mass (Double)
-        an electronicConfiguration (String)

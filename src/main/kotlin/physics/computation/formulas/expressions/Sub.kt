@@ -8,7 +8,7 @@ class Sub(val left: Expression, val right: Expression) : Expression() {
     override fun toString(): String {
         return when {
             right is Sum -> "$left - ($right)"
-            right is AllVars && right.collectorName == "sum" -> "$left - ($right)"
+            right is All && right.collectorName == "sum" -> "$left - ($right)"
             else -> "$left - $right"
         }
     }

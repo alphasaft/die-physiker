@@ -8,27 +8,26 @@ import physics.VariableNameCrashError
 import physics.components.Component
 import physics.components.Field
 import physics.components.PhysicalSystem
-import physics.computation.formulas.Formula
 import physics.values.PhysicalValue
 import physics.values.castAs
-import println
 
 
 abstract class AbstractPhysicalKnowledge(
     override val name: String,
     protected val requirements: List<ComponentRequirement>,
-    output: Pair<String, String>,
-) : PhysicalKnowledge {
-    protected val outputVariable: String = output.first
-    protected val outputOwnerAlias: String = output.second.split(".").first()
-    protected val outputField: String = output.second.split(".").last()
-    private val requirementCorrespondingToOutput: ComponentRequirement get() = requirements.single { it.alias == outputOwnerAlias }
+    outputVariableAndLocation: Pair<String, Location.At>,
+) : PhysicalKnowledge() {
 
-    override fun <T : PhysicalValue<*>> getFieldValue(field: Field<T>, system: PhysicalSystem): Pair<T, AbstractPhysicalKnowledge> {
+    protected val outputVariable: String = outputVariableAndLocation.first
+    protected val output: Location.At = outputVariableAndLocation.second
+    private val requirementCorrespondingToOutput: ComponentRequirement get() = requirements.single { it.alias == output.alias }
+
+    override fun <T : PhysicalValue<*>> getFieldValue(field: Field<T>, system: PhysicalSystem): Triple<T, AbstractPhysicalKnowledge, String> {
         val fieldOwner = system.findFieldOwner(field)
         val appropriateForm = translateToAppropriateFormInOrderToCompute(field.name, fieldOwner, system)
         val result = appropriateForm.compute(field, system)
-        return result.castAs(field.type) to appropriateForm
+        val specificRepresentation = appropriateForm.renderFor(field, system)
+        return Triple(result.castAs(field.type), this, specificRepresentation)
     }
 
     abstract fun translateToAppropriateFormInOrderToCompute(
@@ -46,11 +45,19 @@ abstract class AbstractPhysicalKnowledge(
             .reduce { acc, map -> acc.mergedWith(map) { k, _, _ -> throw VariableNameCrashError(k) } }
     }
 
+    protected fun selectRequiredFieldsIn(system: PhysicalSystem, outputOwner: Component): Map<String, Field<*>> {
+        val selectedComponents = selectRequiredComponentsIn(system, outputOwner)
+        return requirements
+            .map { it.fetchRequiredFieldsIn(selectedComponents) }
+            .reduce { acc, map -> acc.mergedWith(map) { _, _ -> throw InternalError() } }
+    }
+
     protected fun selectRequiredComponentsIn(
         system: PhysicalSystem,
         outputOwner: Component
     ): Map<String, Component> {
-        val components = mutableMapOf(outputOwnerAlias to outputOwner)
+
+        val components = mutableMapOf(output.alias to outputOwner)
         val requirements = requirements.sortedByDescending { if (it.selectAll) 0 else 1 }.toMutableList()
 
         while (requirements.isNotEmpty()) {
@@ -66,7 +73,7 @@ abstract class AbstractPhysicalKnowledge(
     }
 
     protected fun findVariableCorrespondingTo(field: String, owner: Component): String {
-        if (field == outputField && owner instanceOf requirementCorrespondingToOutput.type) return outputVariable
+        if (field == output.field && owner instanceOf requirementCorrespondingToOutput.type) return outputVariable
 
         for (requirement in requirements.filter { !it.selectAll && owner instanceOf it.type }) {
             for ((variable, backingField) in requirement.ownedVariables) {
@@ -88,9 +95,9 @@ abstract class AbstractPhysicalKnowledge(
         return requirements.map { requirement ->
             when {
                 requirement === oldOutputRequirement && requirement === newOutputRequirement -> requirement
-                    .withRequiredVariable(outputVariable, outputField)
+                    .withRequiredVariable(outputVariable, output.field)
                     .withOptionalField(matchingField)
-                requirement === oldOutputRequirement -> requirement.withRequiredVariable(outputVariable, outputField)
+                requirement === oldOutputRequirement -> requirement.withRequiredVariable(outputVariable, output.field)
                 requirement === newOutputRequirement -> requirement.withOptionalField(matchingField)
                 else -> requirement
             }

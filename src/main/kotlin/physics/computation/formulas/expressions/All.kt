@@ -2,12 +2,19 @@ package physics.computation.formulas.expressions
 
 import physics.noop
 import physics.values.PhysicalDouble
+import println
 
-class AllVars(
-    val genericVariableName: String,
+class All(
+    val genericExpression: Expression,
     val collectorName: String,
     private val maximalIndiceNotation: String = "n",
 ) : Expression() {
+    constructor(
+        genericVariableName: String,
+        collectorName: String,
+        maximalIndiceNotation: String = "n"
+    ): this(Var(genericVariableName), collectorName, maximalIndiceNotation)
+
     companion object {
         val collectors: Map<String, (List<PhysicalDouble>) -> PhysicalDouble> = mapOf(
             "sum" to { it.reduce(PhysicalDouble::plus) },
@@ -21,21 +28,27 @@ class AllVars(
 
     override val members: Collection<Expression> = emptyList()
     private val collector: (List<PhysicalDouble>) -> PhysicalDouble = collectors.getValue(collectorName)
+    private val genericVariablesNames = genericExpression.allVariables().filter { "#" in it }
 
-    init {
-        require("#" in genericVariableName) { "Expected '#' in the variable name." }
+    private fun expression(i: Int) = expression(i.toString())
+    private fun expression(name: String): Expression {
+        val variablesNamesForIteration = genericVariablesNames.associateWith { it.replace("#", name) }
+        var resultingExpression = genericExpression
+        for ((genericVariable, iterationVariable) in variablesNamesForIteration) {
+            resultingExpression = resultingExpression.substitute(Var(genericVariable), Var(iterationVariable))
+        }
+        return resultingExpression
     }
-
-    private fun variable(i: Int) = variable(i.toString())
-    private fun variable(name: String) = genericVariableName.replace("#", name)
 
     override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
         var i = 1
         val collected = mutableListOf<PhysicalDouble>()
-        while (variable(i) in args) {
-            collected.add(args.getValue(variable(i)))
-            i++
+
+        while (genericVariablesNames.first().replace("#", i.toString()) in args) {
+            val expression = expression(i++)
+            collected.add(expression.evaluate(args))
         }
+
         return collector(collected)
     }
 
@@ -52,7 +65,7 @@ class AllVars(
     }
 
     override fun toString(): String {
-        val variables = listOf(variable(1), variable(2), "...", variable(maximalIndiceNotation))
+        val variables = listOf(expression(1), expression(2), "...", expression(maximalIndiceNotation))
         return when (collectorName) {
             "sum" -> variables.joinToString("+")
             "product" -> variables.joinToString("*")
@@ -65,10 +78,10 @@ class AllVars(
     }
 
     override fun equals(other: Any?): Boolean {
-        return other is AllVars && collector == other.collector && genericVariableName == other.genericVariableName
+        return other is All && collector == other.collector && genericExpression == other.genericExpression
     }
 
     override fun hashCode(): Int {
-        return AllVars::class.hashCode() * 7 + genericVariableName.hashCode() * 13
+        return All::class.hashCode() * 7 + genericExpression.hashCode() * 13
     }
 }

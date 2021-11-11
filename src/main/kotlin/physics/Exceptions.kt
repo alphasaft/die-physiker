@@ -31,7 +31,7 @@ class FieldHasUnknownValueException(field: String): KnowledgeException("Value of
 
 class VariableNameCrashError(variable: String) : KnowledgeException("Got two different values for variable $variable.")
 
-class ComponentAliasCrashError(alias: String) : KnowledgeException("two or more components were registered under the alias $alias.")
+class ComponentAliasCrashError(alias: String) : KnowledgeException("Two or more components were registered under the alias $alias.")
 
 internal class EndOfMultiSelection : KnowledgeException("All of the components that meet given requirements were selected")
 
@@ -41,6 +41,8 @@ open class ComponentException(message: String) : PhysicsException(message)
 class FieldNotFoundException(field: String, owner: String): ComponentException("$owner(...) doesn't own field $field")
 
 class ComponentGroupNotFoundException(groupName: String, owner: String): ComponentException("$owner(...) doesn't own a subcomponent group named $groupName")
+
+class NoRepresentationProvided(componentName: String) : ComponentException("Component $componentName doesn't possess a custom representation.")
 
 class FieldCastException(field: Field<*>, into: KClass<out PhysicalValue<*>>): ComponentException("Field $field (type ${field.type.simpleName}) cannot be cast into ${into.simpleName}")
 

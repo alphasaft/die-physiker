@@ -21,7 +21,7 @@ class ComponentGroup internal constructor(
     override fun get(index: Int): Component = content[index]
 
     private fun checkSize() {
-        if (size < minimumSize || (maximumSize != -1 && content.size > maximumSize)) {
+        if (size < minimumSize || (maximumSize != -1 && size > maximumSize)) {
             throw IllegalArgumentException("Size of component group '$name' is not within its bounds (from $minimumSize to $maximumSize).")
         }
     }
@@ -35,6 +35,9 @@ class ComponentGroup internal constructor(
 
     override operator fun contains(element: Component): Boolean =
         content.any { element === it || element in it }
+
+    fun copy(content: List<Component> = this.content.map { it.copy() }) =
+        ComponentGroup(name, minimumSize, maximumSize, contentType, content)
 
     class Template(
         val name: String,

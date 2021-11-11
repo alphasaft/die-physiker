@@ -30,11 +30,19 @@ class Equality(
     }
 
     fun composeWith(equality: Equality, joiningVariable: String = equality.variable): Equality {
-        return Equality(this.variable, expression.substitute(joiningVariable, equality.expression))
+        return Equality(this.variable, expression.substitute(Var(joiningVariable), equality.expression))
     }
 
     fun toFlatString(): String {
         return "$variable = $expression"
+    }
+
+    operator fun component1(): String {
+        return variable
+    }
+
+    operator fun component2(): Expression {
+        return expression
     }
 }
 

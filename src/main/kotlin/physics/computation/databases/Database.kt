@@ -18,7 +18,7 @@ class Database(
     private val connection: DatabaseConnection,
     given: ComponentClass,
     thenLink: Map<String, String>? = null
-) : PhysicalKnowledge {
+) : PhysicalKnowledge() {
 
     constructor(
         name: String,
@@ -43,7 +43,7 @@ class Database(
     override fun <T : PhysicalValue<*>> getFieldValue(
         field: Field<T>,
         system: PhysicalSystem
-    ): Pair<T, PhysicalKnowledge> {
+    ): Triple<T, PhysicalKnowledge, String> {
         if (field.name !in fieldsLinkedToColumns.keys) throw InappropriateKnowledgeException(this, field.name)
 
         val fieldOwner = system.findFieldOwner(field)
@@ -52,8 +52,7 @@ class Database(
         val knownFields = fieldsLinkedToColumns.keys.filter { fieldOwner.getOrNull<PhysicalValue<*>>(it) != null }
         if (knownFields.isEmpty()) throw InappropriateKnowledgeException(this, field.name, "No field has a known value in order to perform the query.")
         val chosenField = knownFields.first()
-
-        return field.factory.fromString(connection.getCell(
+        val queryResult = field.factory.fromString(connection.getCell(
             fieldsLinkedToColumns.getValue(field.name),
             connection.labeledLines.indexOf(connection.labeledLines.firstOrNull {
                     applyOptions(fieldOwner.get<PhysicalValue<*>>(chosenField).toString()) ==
@@ -63,7 +62,9 @@ class Database(
                 column = fieldsLinkedToColumns.getValue(chosenField),
                 value = fieldOwner[chosenField]
             )
-        ))) to this
+        )))
+
+        return Triple(queryResult, this, renderFor(field, system))
     }
 
     override fun toString(): String {

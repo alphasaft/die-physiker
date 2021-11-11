@@ -24,6 +24,8 @@ internal fun String.titlecase(): String {
 
 @Suppress("UNUSED_PARAMETER")
 internal fun alwaysTrue(x: Any?): Boolean = true
+@Suppress("UNUSED_PARAMETER")
+internal fun alwaysTrue(x: Any?, y: Any?) = true
 internal fun <T> noop(x: T): T = x
 
 internal fun <T> chain(initial: T, vararg mappers: Mapper<T>): T = chain(initial, mappers.toList())

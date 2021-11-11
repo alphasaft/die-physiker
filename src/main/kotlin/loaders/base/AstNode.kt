@@ -6,7 +6,7 @@ open class AstNode {
     val branches: Set<List<String>> get() = branchesStorage
 
     private val childrenStorage = mutableMapOf<String, AstNode>()
-    private val children: Map<String, AstNode> get() = childrenStorage
+    protected val children: Map<String, AstNode> get() = childrenStorage
     val size get() = children.size
 
     private var contentSet = false
@@ -26,7 +26,7 @@ open class AstNode {
     }
 
     protected fun requireUnlocked() {
-        if (locked) throw IllegalArgumentException("Can't mutate immutable node $this")
+        if (locked) throw IllegalArgumentException("Can't mutate immutable node.")
     }
 
     internal open fun clean(): AstNode {
@@ -34,6 +34,15 @@ open class AstNode {
         else AstNode().apply {
             content = this@AstNode.content
             childrenStorage.putAll(this@AstNode.children.mapValues { (_, c) -> c.clean() })
+        }
+    }
+
+    internal open fun copy(): AstNode {
+        return AstNode().apply {
+            this@apply.content = this@AstNode.content
+            for ((name, child) in this@AstNode.children) {
+                this@apply.setNode(name, child.copy())
+            }
         }
     }
 
@@ -56,11 +65,18 @@ open class AstNode {
             1 -> children.getValue(nodePath.single())
             else -> children.getValue(nodePath.first()).getNode(nodePath.subList(1, nodePath.size))
         }
+    }
 
+    fun getNodeOrNull(nodeName: String): AstNode? {
+        return try {
+            getNode(nodeName)
+        } catch (e: NoSuchElementException) {
+            return null
+        }
     }
 
     fun allNodes(genericNodePos: String) = allNodes(listOf(genericNodePos))
-    fun allNodes(genericNodePath: List<String>): List<AstNode> {
+    private fun allNodes(genericNodePath: List<String>): List<AstNode> {
         require('#' in genericNodePath.last()) { "Last item of the node path must contain '#'" }
 
         val prePath = genericNodePath.subList(0, genericNodePath.size-1)
@@ -104,7 +120,7 @@ open class AstNode {
     }
 
     operator fun get(childName: String): String {
-        return getOrNull(childName) ?: throw IllegalArgumentException("Field $childName is null ; use getOrNull instead.")
+        return getOrNull(childName) ?: throw IllegalArgumentException("Field '$childName' is empty ; use getOrNull instead.")
     }
 
     fun getOrNull(fieldName: String): String? {

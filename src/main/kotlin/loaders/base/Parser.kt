@@ -6,7 +6,7 @@ abstract class Parser {
     protected lateinit var remainingInput: String
     private lateinit var initialInput: String
     private val currentCharNo: Int get() = initialInput.length - remainingInput.length
-    private var mostAdvancedFailure: SyntaxParsingError? = null
+    private var mostAdvancedFailure: ParsingError? = null
 
     private lateinit var ast: Ast
     private lateinit var astPath: MutableList<String>
@@ -18,19 +18,20 @@ abstract class Parser {
     protected val string = Regex("\".*?\"")
     protected val identifier = Regex("[a-zA-Zéèçàù_][a-zA-Z0-9éèçàù_]*")
     protected val integer = Regex("\\d+")
-    protected val float = Regex("\\d[.,]\\d")
+    protected val double = Regex("\\d[.,]\\d")
 
     fun parse(file: File) = parse(file.readText())
-    fun parse(input: String): Ast {
+    fun parse(input: String, asSubParser: Boolean = false): Ast {
         initialInput = (if (caseInsensitive) input.lowercase() else input).filterNot { it in parasiteChars }.trim { it in " \t\n\r" }
         remainingInput = initialInput
         ast = prepareAst(input)
         astPath = mutableListOf()
 
         axiom()
-        eof()
 
-        return ast.clean().apply { lock() }
+        val ast = ast.copy()
+        if (asSubParser) consumeRegex("[.\n]*") else { eof() ; ast.lock() }
+        return ast.clean()
     }
 
     private fun prepareAst(input: String): Ast {
@@ -50,10 +51,11 @@ abstract class Parser {
     }
 
     private fun fail(message: String, errorCtr: (Pair<Int, Int>, String) -> ParsingError = ::SyntaxParsingError): Nothing {
-        throw errorCtr(charNoAsPosition(), message)
+        updateMostAdvancedFailure(errorCtr(charNoAsPosition(), message))
+        throw mostAdvancedFailure!!
     }
 
-    private fun updateMostAdvancedFailure(candidate: SyntaxParsingError) {
+    private fun updateMostAdvancedFailure(candidate: ParsingError) {
         val candidatePos = candidate.at
         val mostAdvancedFailurePos = mostAdvancedFailure?.at
 
@@ -79,17 +81,37 @@ abstract class Parser {
     }
 
     private fun eof() {
-        if (remainingInput != "") {
-            mostAdvancedFailure?.let { throw it }
-            fail("Expected source input to end, got $remainingInput")
+        if (remainingInput != "") fail("Expected source input to end, got $remainingInput")
+    }
+
+    private fun nextToken(): String {
+        return when {
+            remainingInput == "" -> ""
+            remainingInput.first().isLetter() -> remainingInput.takeWhile { it.isLetter() || it.isDigit() }
+            remainingInput.first().isDigit() -> remainingInput.takeWhile { it.isDigit() }
+            remainingInput.first() == '\n' -> "\\n"
+            else -> remainingInput.take(1)
         }
+    }
+
+    protected fun invokeAsSubParser(parser: Parser, groupName: String? = null) {
+        val producedSubAst = parser.parse(input = remainingInput, asSubParser = true)
+        val path = if (groupName == null) astPath else astPath.plus(groupName)
+        consume(producedSubAst.content!!)
+        ast.setNode(path, producedSubAst)
     }
 
     protected fun consume(what: String): String {
         val caseAdaptedWhat = if (caseInsensitive) what.lowercase() else what
-        if (!remainingInput.startsWith(caseAdaptedWhat)) fail("Expected '$what', got ${remainingInput.split(*whitespaces.toCharArray()).first()}.")
+        if (!remainingInput.startsWith(caseAdaptedWhat)) fail("Expected '$what', got ${nextToken()}.")
         remainingInput = remainingInput.removePrefix(caseAdaptedWhat).dropWhile { it in whitespaces }
         return what
+    }
+
+    protected fun consumeSentence(sentence: String) {
+        for (word in sentence.split(*whitespaces.toCharArray()).filterNot { it.isEmpty() }) {
+            consume(word)
+        }
     }
 
     protected fun consumeRegex(what: Regex) = consumeRegex(what.pattern)
@@ -169,7 +191,7 @@ abstract class Parser {
         fun generateBodyForIteration(iterationNo: Int, beginsWithSeparator: Boolean): () -> Unit {
             return {
                 group(groupName?.replace("#", (iterationNo+1).toString())) {
-                    if (beginsWithSeparator) consume(separator)
+                    if (beginsWithSeparator) consumeRegex(separator)
                     block()
                 }
             }

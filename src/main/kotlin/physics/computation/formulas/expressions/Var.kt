@@ -12,7 +12,7 @@ class Var(val name: String) : Expression() {
     }
 
     override fun evaluate(args: Map<String, PhysicalDouble>): PhysicalDouble {
-        return args.getValue(name) as PhysicalDouble  // TODO : Check type and add Int support
+        return args.getValue(name)
     }
 
     override fun isolateDirectMember(member: Expression): (Expression) -> Expression {

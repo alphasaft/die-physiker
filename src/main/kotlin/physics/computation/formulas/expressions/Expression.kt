@@ -21,6 +21,14 @@ sealed class Expression {
             simplified = this
     }
 
+    private fun allMembers(): List<Expression> {
+        return listOf(this) + members + members.map { it.allMembers() }.flatten()
+    }
+
+    fun allVariables(): List<String> {
+        return allMembers().filterIsInstance<Var>().map { it.name }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (other !is Expression) return false
         return this::class == other::class && this.members == other.members
@@ -66,8 +74,9 @@ sealed class Expression {
         return filter { it !in excluded }
     }
 
-    fun substitute(variable: String, expression: Expression): Expression {
-        val modifiedMembers = members.map { if (it == Var(variable)) expression else it }
+    fun substitute(old: Expression, new: Expression): Expression {
+        if (this == old) return new
+        val modifiedMembers = members.map { it.substitute(old, new) }
         return withMembers(modifiedMembers)
     }
 

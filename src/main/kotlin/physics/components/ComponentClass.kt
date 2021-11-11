@@ -4,7 +4,6 @@ import physics.*
 import physics.computation.PhysicalKnowledge
 import physics.titlecase
 import physics.values.PhysicalValue
-import println
 
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
@@ -16,20 +15,31 @@ class ComponentClass(
     extends: List<ComponentClass> = emptyList(),
     fieldsTemplates: List<Field.Template<*>> = emptyList(),
     subcomponentsGroupsTemplates: List<ComponentGroup.Template> = emptyList(),
+    representationField: String? = null,
 ) {
     private val bases = extends
     private val allBases: List<ComponentClass> = bases + bases.map { it.allBases }.flatten()
     private val fieldsTemplates: List<Field.Template<*>> = fieldsTemplates + bases.map { it.fieldsTemplates }.flatten()
     private val subcomponentsGroupsTemplates: List<ComponentGroup.Template> = subcomponentsGroupsTemplates + bases.map { it.subcomponentsGroupsTemplates }.flatten()
+    private val representationField: String? = representationField ?: allBases.firstOrNull()?.representationField
 
     val fields get() = fieldsTemplates.map { it.name }
+    val hasCustomRepresentation get() = representationField != null
+
+    init {
+        if (representationField != null) {
+            require(representationField.isNotBlank())  { "Representation field shouldn't be blank." }
+            require(representationField in fields) { "Chosen representation field '$representationField' isn't an existing field. " }
+        }
+    }
 
     inner class Instance internal constructor(
         val fields: List<Field<*>>,
-        private val subcomponentsGroups: List<ComponentGroup>,
+        subcomponentsGroups: List<ComponentGroup>,
     ) {
         val componentClass = this@ComponentClass
         val name = componentClass.name
+        private val subcomponentsGroups = subcomponentsGroups.toMutableList()
         private val knownFieldsCount: Int get() = fields.count { it.isKnown() } + subcomponentsGroups.sumOf { g -> g.content.sumOf { c -> c.knownFieldsCount } }
 
         @JvmName("getFieldAsPhysicalValue")
@@ -56,6 +66,12 @@ class ComponentClass(
         fun getSubcomponentGroup(groupName: String): ComponentGroup = subcomponentsGroups
             .find { it.name == groupName }
             ?: throw ComponentGroupNotFoundException(groupName, name)
+
+        fun modifySubcomponentGroupContent(groupName: String, newContent: List<Component>) {
+            val oldGroup = subcomponentsGroups.single { it.name == groupName }
+            subcomponentsGroups.remove(oldGroup)
+            subcomponentsGroups.add(oldGroup.copy(content = newContent))
+        }
 
         infix fun instanceOf(componentClass: ComponentClass) = this.componentClass.inheritsOf(componentClass)
         infix fun notInstanceOf(componentClass: ComponentClass) = !(this instanceOf componentClass)
@@ -86,10 +102,32 @@ class ComponentClass(
             }
         }
 
+        // Modifier
+        operator fun invoke(modifier: ComponentModifier.() -> Unit): Component {
+            return ComponentModifier(this).apply(modifier).build()
+        }
+
+        fun copy(): Component {
+            return Instance(
+                fields.map { it.copy() },
+                subcomponentsGroups.map { it.copy() }
+            )
+        }
+
         operator fun contains(subcomponent: Component): Boolean =
             subcomponentsGroups.any { subcomponent in it }
 
         override fun toString(): String {
+            return if (representationField != null && getOrNull<PhysicalValue<*>>(representationField) != null) toStringCustom()!!
+            else toStringDefault()
+        }
+
+        fun toStringCustom(): String? {
+            if (representationField == null) return null
+            return getOrNull<PhysicalValue<*>>(representationField)?.toString()
+        }
+
+        private fun toStringDefault(): String {
             val newline = "\n    "
             val builder = StringBuilder()
 
@@ -101,7 +139,7 @@ class ComponentClass(
                     separator = newline,
                     prefix = newline,
                     postfix = if (subcomponentsGroups.isEmpty()) "\n" else newline
-                )
+                ) { it.toString(owner = this) }
             }
 
             if (subcomponentsGroups.isNotEmpty()) {

@@ -7,14 +7,13 @@ import physics.components.Field
 import physics.components.PhysicalSystem
 import physics.computation.AbstractPhysicalKnowledge
 import physics.computation.ComponentRequirement
-import physics.computation.PhysicalKnowledge
+import physics.computation.Location
 import physics.values.PhysicalValue
-import physics.values.castAs
 
 class ComplexKnowledge(
     name: String,
     requirements: List<ComponentRequirement>,
-    output: Pair<String, String>,
+    output: Pair<String, Location.At>,
     private val mappers: Map<String, (Map<String, PhysicalValue<*>>) -> PhysicalValue<*>>,
 ) : AbstractPhysicalKnowledge(
     name,
@@ -24,7 +23,7 @@ class ComplexKnowledge(
     constructor(
         name: String,
         vararg requirements: ComponentRequirement,
-        output: Pair<String, String>,
+        output: Pair<String, Location.At>,
         mappers: Map<String, (Map<String, PhysicalValue<*>>) -> PhysicalValue<*>>
     ): this(name, requirements.toList(), output, mappers)
 
@@ -38,12 +37,12 @@ class ComplexKnowledge(
         val variable = findVariableCorrespondingTo(fieldName, owner)
         if (variable == outputVariable) return this
 
-        val newOutputRequirement = requirements.single { variable in it.ownedVariables }
+        val newOutputAlias = requirements.single { variable in it.ownedVariables }.alias
         val requirements = refactorRequirementsToIsolateVariable(variable)
         return ComplexKnowledge(
             name,
             requirements,
-            variable to "${newOutputRequirement.alias}.$fieldName",
+            variable to Location.At(newOutputAlias, fieldName),
             mappers
         )
     }

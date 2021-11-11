@@ -21,4 +21,8 @@ class Ast(source: String) : AstNode() {
     override fun clean(): Ast {
         return super.clean().toAst()
     }
+
+    override fun copy(): Ast {
+        return super.copy().toAst()
+    }
 }

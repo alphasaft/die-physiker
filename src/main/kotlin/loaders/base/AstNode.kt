@@ -1,12 +1,13 @@
 package loaders.base
 
 
+@Suppress("unused")
 open class AstNode {
     protected val branchesStorage = mutableSetOf<List<String>>()
     val branches: Set<List<String>> get() = branchesStorage
 
     private val childrenStorage = mutableMapOf<String, AstNode>()
-    protected val children: Map<String, AstNode> get() = childrenStorage
+    private val children: Map<String, AstNode> get() = childrenStorage
     val size get() = children.size
 
     private var contentSet = false
@@ -47,7 +48,8 @@ open class AstNode {
     }
 
     internal fun toAst(): Ast {
-        return Ast(content!!).apply {
+        return Ast().apply {
+            content = this@AstNode.content
             for ((nodeName, node) in this@AstNode.children)
                 this@apply.setNode(nodeName, node)
         }
@@ -58,8 +60,8 @@ open class AstNode {
         branchesStorage.addAll(node.branches.map { branchPath + it })
     }
 
-    fun getNode(nodePos: String) = getNode(listOf(nodePos))
-    fun getNode(nodePath: List<String>): AstNode {
+    operator fun rangeTo(nodeName: String): AstNode = getNode(listOf(nodeName))
+    private fun getNode(nodePath: List<String>): AstNode {
         return when (nodePath.size) {
             0 -> this
             1 -> children.getValue(nodePath.single())
@@ -69,7 +71,7 @@ open class AstNode {
 
     fun getNodeOrNull(nodeName: String): AstNode? {
         return try {
-            getNode(nodeName)
+            this..nodeName
         } catch (e: NoSuchElementException) {
             return null
         }
@@ -93,7 +95,7 @@ open class AstNode {
     }
 
     fun hasChildNode(nodePos: String) = hasChildNode(listOf(nodePos))
-    fun hasChildNode(nodePath: List<String>): Boolean {
+    private fun hasChildNode(nodePath: List<String>): Boolean {
         return try {
             getNode(nodePath)
             true
@@ -108,7 +110,7 @@ open class AstNode {
         if (nodePath.size == 1) childrenStorage[nodePath.single()] = node
         else {
             if (nodePath.first() !in children) childrenStorage[nodePath.first()] = AstNode()
-            this.getNode(nodePath.first()).setNode(nodePath.subList(1, nodePath.size), node)
+            (this..nodePath.first()).setNode(nodePath.subList(1, nodePath.size), node)
         }
         addAllBranchesFor(nodePath, node)
     }

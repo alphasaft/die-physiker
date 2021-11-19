@@ -25,10 +25,11 @@ class Div(val dividend: Expression, val divider: Expression) : Expression() {
             dividend == divider -> Const(1)
             dividend == Const(1) -> divider.pow(Const(-1))
             divider == Const(1) -> dividend
+            dividend is Const && divider is Const -> Const(dividend.value/divider.value)
             dividend is Div -> (dividend.dividend / (dividend.divider * divider))
             divider is Div -> (dividend * divider.divider) / divider.dividend
             divider is Pow && divider.exponent.let { it is Const && it.value < 0 } -> dividend * divider.withNegatedExponent()
-            dividend is Const && divider is Const -> Const(dividend.value / divider.value)
+            dividend is Log && divider is Log && dividend.base == divider.base -> Log(x = dividend.x, base = divider.x)
             else -> writeAsProduct().simplify()
         }}
 

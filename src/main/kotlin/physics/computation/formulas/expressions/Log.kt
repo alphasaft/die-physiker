@@ -6,12 +6,11 @@ import kotlin.math.log
 import kotlin.math.min
 
 
-class Log(val x: Expression, val base: Expression = Const(10)) : Expression() {
+open class Log(val x: Expression, val base: Expression = Const(10)) : Expression() {
     override val members: Collection<Expression> = listOf(x, base)
 
     override fun toString(): String {
         return when (base) {
-            Const(E) -> "ln($x)"
             Const(10) -> "log($x)"
             else -> "log<$base>($x)"
         }
@@ -37,9 +36,10 @@ class Log(val x: Expression, val base: Expression = Const(10)) : Expression() {
         val x = x.simplify()
 
         return when {
-            base is Const && x is Const -> Const(log(x.value.toDouble(), base.value.toDouble()))
+            x == Const(1) -> Const(0)
             base == x -> Const(1)
             x is Pow && x.x == base -> x.exponent
+            base == Const(E) -> Ln(x)
             else -> Log(x, base)
         }
     }

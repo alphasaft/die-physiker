@@ -3,7 +3,6 @@ package physics.components
 import physics.FieldHasUnknownValueException
 import physics.computation.PhysicalKnowledge
 import physics.values.PhysicalValue
-import println
 
 
 class Field<T : PhysicalValue<*>> private constructor(

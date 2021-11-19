@@ -7,7 +7,7 @@ Le composant abstrait Liquide
 
 Le composant Soluté
     possède :
-        - une masse (Double : kg)
+        - une masse (Double : kg) noté m
 
 
 Le composant Solution étendant Liquide

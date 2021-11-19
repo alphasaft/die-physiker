@@ -7,7 +7,9 @@ object FormulaParser : Parser() {
     override fun axiom() {
         header()
         consume("\n")
-        group("requirements") { requirements() }
+        requirements()
+        consume("\n")
+        output()
         consume("\n")
         equality()
         optional {
@@ -17,53 +19,44 @@ object FormulaParser : Parser() {
     }
 
     private fun header() {
-        consume("La"); consume("formule")
+        consumeSentence("La formule")
         optional { consume("implicite") ; "yes" [ "implicit" ] }
         consumeRegex(string).trim('"')  [ "name" ]
     }
 
     private fun requirements() {
-        consume("concerne"); consume(":"); consume("\n")
-        oneOrMore("requirement-#", separator = "\n") {
-            consume("-")
-            consumeRegex("[\\w#]+")  [ "alias" ]
-            consumeRegex("(une|un|des)")
-            consumeRegex(identifier)  [ "type" ]
-            optional { consume("-s") }
-
-            optional {
-                consume("de")
-                consumeRegex("$identifier.$identifier")  [ "location" ]
+        consumeSentence("concerne : \n")
+        group("requirements") {
+            oneOrMore("requirement-#", separator = "\n") {
+                consume("-")
+                invokeAsSubParser(RequirementParser)
             }
-
-            consume(",")
-            group("variables") { variables() }
         }
     }
 
-    private fun variables() {
-        consume("avec")
-        oneOrMore("variable-#", separator = ",") {
-            variable()
+    private fun output() {
+        consumeSentence("renvoie : \n")
+        group("output") {
+            consumeRegex("$identifier.[$letter ]+").trim()  [ "location" ]
+            consumeSentence("( '")
+            consumeRegex(identifier)  [ "variableName" ]
+            consumeSentence("' )")
         }
-    }
-
-    private fun variable() {
-        consumeRegex("[\\w#]+")  [ "variableName" ]
-        consumeRegex("(son|sa|leurs|leur) ")
-        consumeRegex("[\\w ]+")  [ "field" ]
-
-        optional { consume("-s") }
     }
 
     private fun equality() {
-        consume("on"); consume("a"); consume(":"); consume("\n")
+        consumeSentence("on a : \n")
 
-        consumeRegex(identifier)  [ "outputVariable" ]
-        consume("=")
+        group("equality") {
+            group("left") {
+                expression()
+            }
 
-        group("expression") {
-            expression()
+            consume("=")
+
+            group("right") {
+                expression()
+            }
         }
     }
 

@@ -1,44 +1,34 @@
+import loaders.ComponentClassesLoader
 import loaders.KnowledgeLoader
+import loaders.UnitsLoader
 import physics.components.ComponentClass
 import physics.components.ComponentGroup
 import physics.components.Field
 import physics.computation.formulas.Formula
 import physics.computation.ComponentRequirement
 import physics.computation.Location
-import physics.computation.databases.Database
-import physics.computation.databases.DatabaseOptions
 import physics.computation.formulas.FormulaOptions
 import physics.computation.formulas.expressions.*
-import physics.computation.others.ComplexKnowledge
+import physics.values.*
 import physics.values.units.PhysicalUnit
-import physics.values.PhysicalDouble
-import physics.values.PhysicalInt
-import physics.values.PhysicalString
 import java.io.File
 import java.lang.StringBuilder
 import kotlin.math.min
 
 
-interface MutableNonNullableMap<K, V> {
-    operator fun get(key: K): V
-    operator fun set(k: K, value: V)
-}
-
-
 fun main() {
-    PhysicalUnit.addConverter("g", "kg", 1.0 / 1000)
-    PhysicalUnit.addConverter("mL", "L", 1.0 / 1000)
-    PhysicalUnit.addConverter("mm", "m", 1.0 / 1000)
-    PhysicalUnit.addConverter("ms", "s", 1.0 / 1000)
-    PhysicalUnit.addAlias("N", mapOf("kg" to 1, "m" to 1, "s" to -2))
-
     // TODO : Avoid variables crashes when merging formulas together, and maybe change the way adaptable variables are
     //  handled
 
+    val scope = UnitsLoader.loadFrom(File("${cwd()}\\resources\\units.data"))
+    val valuesFactory = PhysicalValuesFactory(scope)
+    val componentClasses2 = ComponentClassesLoader(valuesFactory, emptyList(), emptyMap(), emptyMap()).loadFrom(File("${cwd()}\\resources\\components.data"))
+    val knowledge2 = KnowledgeLoader(componentClasses2, emptyMap(), emptyMap()).loadFrom(File("${cwd()}\\resources\\formulas.data"))
+
     val constants = ComponentClass("Constants",
         fieldsTemplates = listOf(
-            Field.Template("G", PhysicalDouble.withUnit("N.kg-2.m2")),
-            Field.Template("g", PhysicalDouble.withUnit("N.kg-1")),
+            Field.Template("G", valuesFactory.doubleFactoryWithUnit("N.kg-2.m2")),
+            Field.Template("g", valuesFactory.doubleFactoryWithUnit("N.kg-1")),
         )
     ).invoke(
         fieldValuesAsStrings = mapOf(
@@ -51,7 +41,7 @@ fun main() {
         "VolumeOwner",
         abstract = true,
         fieldsTemplates = listOf(
-            Field.Template("volume", notation = "V", PhysicalDouble.withUnit("L")),
+            Field.Template("volume", notation = "V", valuesFactory.doubleFactoryWithUnit("L")),
         ),
     )
 
@@ -60,15 +50,15 @@ fun main() {
         extends = listOf(VolumeOwner),
 
         fieldsTemplates = listOf(
-            Field.Template("masse", "m", PhysicalDouble.withUnit("kg")),
-            Field.Template("masse volumique", "p", PhysicalDouble.withUnit("kg.L-1")),
+            Field.Template("masse", "m", valuesFactory.doubleFactoryWithUnit("kg")),
+            Field.Template("masse volumique", "p", valuesFactory.doubleFactoryWithUnit("kg.L-1")),
         )
     )
 
     val Solution = ComponentClass("Solution",
         fieldsTemplates = listOf(
-            Field.Template("masse", "m", PhysicalDouble.withUnit("kg")),
-            Field.Template("volume", "V(?)|V", PhysicalDouble.withUnit("L")),
+            Field.Template("masse", "m", valuesFactory.doubleFactoryWithUnit("kg")),
+            Field.Template("volume", "V(?)|V", valuesFactory.doubleFactoryWithUnit("L")),
         ),
         subcomponentsGroupsTemplates = listOf(
             ComponentGroup.Template("solutés", contentType = Solute),
@@ -80,9 +70,10 @@ fun main() {
     val Atome = ComponentClass(
         "Atome",
         fieldsTemplates = listOf(
-            Field.Template("nom", PhysicalString.any()),
-            Field.Template("Z", PhysicalInt),
-            Field.Template("configuration électronique", PhysicalString.model { it matches Regex("(\\(\\d[spdf]\\)\\d{1,2})+") }),
+            Field.Template("nom", valuesFactory.stringFactory()),
+            Field.Template("symbole", valuesFactory.stringFactory()),
+            Field.Template("numéro atomique", valuesFactory.intFactory()),
+            Field.Template("configuration électronique", valuesFactory.stringFactory { it matches Regex("(\\(\\d[spdf]\\)\\d{1,2})+") }),
         )
     )
 
@@ -109,23 +100,6 @@ fun main() {
         output = "p" to Location.At("X.masse volumique"),
         expression = "p" equal Var("m") / Var("V"),
     )
-
-
-    val tbl = Database(
-        "Tableau périodique des éléments",
-
-        options = DatabaseOptions.CASE_INSENSITIVE + DatabaseOptions.NORMALIZE,
-
-        from = "PeriodicTableOfElements.csv",
-        given = Atome,
-        thenLink = mapOf(
-            "nom" to "Element",
-            "Z" to "AtomicNumber",
-        )
-    )
-
-    fun oxydoreductionBetweenTheseExists(first: String, second: String): Boolean = true
-
 
     /*
     val oxydoreduction = Reaction(
@@ -157,48 +131,7 @@ fun main() {
     )
      */
 
-    val myComplexKnowledge = ComplexKnowledge(
-        "Lecture et écriture d'une configuration électronique",
-
-        ComponentRequirement.single("X", type = Atome, location = Location.Any, variables = mapOf("Z" to "Z")),
-        output = "config" to Location.At("X.configuration électronique"),
-
-        mappers = mapOf(
-            "config" to mapper@{ args ->
-                var remainingElectrons = (args["Z"] as PhysicalInt).value
-                val subshellNames = mapOf(0 to "s", 1 to "p", 2 to "d", 3 to "f")
-                val config = StringBuilder()
-
-                var currentEnergyLevel = 1
-                var shell = 1
-                var subshell = 0
-
-                while (remainingElectrons > 0) {
-                    val electronsOnTheSubshell = min(4*subshell + 2, remainingElectrons)
-                    remainingElectrons -= electronsOnTheSubshell
-
-                    config.append("($shell${subshellNames[subshell]})$electronsOnTheSubshell")
-                    shell++
-                    subshell--
-
-                    if (subshell < 0) {
-                        currentEnergyLevel++
-                        shell = currentEnergyLevel / 2 + 1
-                        subshell = currentEnergyLevel - shell
-                    }
-                }
-
-                return@mapper PhysicalString(config.toString())
-            },
-
-            "Z" to mapper@{ args ->
-                val config = args["config"] as PhysicalString
-                return@mapper PhysicalInt(config.split(")").sumOf { it.split("(").first().ifEmpty { "0" }.toInt() })
-            }
-        )
-    )
-
-    val knowledge = listOf(formula1, formula2, tbl, myComplexKnowledge)
+    val knowledge = listOf(formula1, formula2)
 
     val solvant = Solvant(fieldValuesAsStrings = mapOf("volume" to "Ve = 0.70 L"))
     val solute1 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.20 L", "masse" to "20 g"))
@@ -206,16 +139,47 @@ fun main() {
     val solute3 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.30 L"))
     val solutes = listOf(solute1, solute2, solute3)
     val solution = Solution(subcomponentGroupsContents = mapOf("solutés" to solutes, "solvant" to listOf(solvant)))
-    val atome = Atome(fieldValuesAsStrings = mapOf("Z" to "29"))
+    val atome = Atome(fieldValuesAsStrings = mapOf("numéro atomique" to "29"))
     val componentClasses = mapOf("Solution" to Solution, "Soluté" to Solute, "Solvant" to Solvant, "Atome" to Atome)
 
     solution.fillFieldsWithTheirValuesUsing(knowledge)
-    atome.fillFieldsWithTheirValuesUsing(knowledge)
 
     println(solution)
     println()
     println(atome)
 
-    KnowledgeLoader(componentClasses).loadFrom(File("${cwd()}\\resources\\formulas.data"))
-}
+    fun configFromAtomicNumber(arguments: Map<String, PhysicalValue<*>>): PhysicalString {
+        var remainingElectrons = (arguments["Z"]!!.toPhysicalInt()).value
+        val subshellNames = mapOf(0 to "s", 1 to "p", 2 to "d", 3 to "f")
+        val config = StringBuilder()
 
+        var currentEnergyLevel = 1
+        var shell = 1
+        var subshell = 0
+
+        while (remainingElectrons > 0) {
+            val electronsOnTheSubshell = min(4*subshell + 2, remainingElectrons)
+            remainingElectrons -= electronsOnTheSubshell
+
+            config.append("($shell${subshellNames[subshell]})$electronsOnTheSubshell")
+            shell++
+            subshell--
+
+            if (subshell < 0) {
+                currentEnergyLevel++
+                shell = currentEnergyLevel / 2 + 1
+                subshell = currentEnergyLevel - shell
+            }
+        }
+
+        return valuesFactory.string(config.toString())
+    }
+
+    fun atomicNumberFromConfig(arguments: Map<String, PhysicalValue<*>>): PhysicalInt {
+        val config = arguments["config"] as PhysicalString
+        return valuesFactory.int(config.split(")").sumOf { it.split("(").first().ifEmpty { "0" }.toInt() })
+    }
+
+    val equality = ln(Var("E")) / ln(Const(10)) equal Const(4.8) + (Const(3)/Const(2)) * Var("M")
+    val mappers = mapOf("configFromAtomicNumber" to ::configFromAtomicNumber, "atomicNumberFromConfig" to ::atomicNumberFromConfig)
+}

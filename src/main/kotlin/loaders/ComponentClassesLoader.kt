@@ -10,17 +10,15 @@ import physics.components.ComponentClass
 import physics.components.ComponentGroup
 import physics.components.Field
 import physics.noop
-import physics.values.PhysicalDouble
-import physics.values.PhysicalInt
-import physics.values.PhysicalString
-import physics.values.PhysicalValue
+import physics.values.*
 
 
 class ComponentClassesLoader(
+    private val valuesFactory: PhysicalValuesFactory,
     preloadedClasses: List<ComponentClass> = emptyList(),
-    private val checks: Map<String, Predicate<String>> = emptyMap(),
-    private val normalizers: Map<String, Mapper<String>> = emptyMap(),
-) : DataLoader<ComponentClassesParser, List<ComponentClass>>(ComponentClassesParser) {
+    private val componentChecks: Map<String, Predicate<String>> = emptyMap(),
+    private val valuesNormalizers: Map<String, Mapper<String>> = emptyMap(),
+) : DataLoader<ComponentClassesParser, Map<String, ComponentClass>>(ComponentClassesParser) {
 
     private val loadedClasses = preloadedClasses.toMutableList()
 
@@ -28,11 +26,14 @@ class ComponentClassesLoader(
         .singleOrNull { it.name == name }
         ?: throw NoSuchElementException("Can't find class $name ; it maybe wasn't loaded.")
 
-    private fun getCheck(name: String) = checks[name] ?: throw NoSuchElementException("Can't find check '$name'.")
-    private fun getNormalizer(name: String) = normalizers[name] ?: throw NoSuchElementException("Can't find normalizer '$name'.")
+    private fun getCheck(name: String) = componentChecks[name] ?: throw NoSuchElementException("Can't find check '$name'.")
+    private fun getNormalizer(name: String) = valuesNormalizers[name] ?: throw NoSuchElementException("Can't find normalizer '$name'.")
 
-    override fun generateFrom(ast: Ast): List<ComponentClass> {
-        return ast.allNodes("component-#").map { generateComponentClassFrom(it).also { cc -> loadedClasses.add(cc) } }
+    override fun generateFrom(ast: Ast): Map<String, ComponentClass> {
+        return ast
+            .allNodes("component-#")
+            .map { generateComponentClassFrom(it).also { cc -> loadedClasses.add(cc) } }
+            .associateBy { it.name }
     }
 
     private fun generateComponentClassFrom(componentClassNode: AstNode): ComponentClass {
@@ -54,24 +55,24 @@ class ComponentClassesLoader(
         val name = fieldNode["fieldName"]
         val notation = fieldNode.getOrNull("notation") ?: name
         val factory = when (fieldNode["type"]) {
-            "double" -> PhysicalDouble.withUnit(fieldNode["unit"])
-            "int" -> PhysicalInt
-            "string" -> generateStringFactoryFrom(fieldNode)
+            "double" -> valuesFactory.doubleFactoryWithUnit(fieldNode["unit"])
+            "int" -> valuesFactory.intFactory()
+            "string" -> generateStringFactoryFrom(fieldNode, valuesFactory)
             else -> throw NoWhenBranchMatchedException()
         }
         return Field.Template(name, notation, factory)
     }
 
-    private fun generateStringFactoryFrom(fieldNode: AstNode): PhysicalValue.Factory<PhysicalString> {
+    private fun generateStringFactoryFrom(fieldNode: AstNode, valuesFactory: PhysicalValuesFactory): PhysicalValue.Factory<PhysicalString> {
         val normalizer = fieldNode.getOrNull("normalizerFunctionRef")?.let { getNormalizer(it) } ?: ::noop
         val check = fieldNode.getOrNull("checkFunctionRef")?.let { getCheck(it) } ?: ::alwaysTrue
-        return PhysicalString.model(normalizer, check)
+        return valuesFactory.stringFactory(normalizer, check)
     }
 
     private fun generateSubcomponentGroupTemplateFrom(groupNode: AstNode): ComponentGroup.Template {
         val name = groupNode["subcomponentGroupName"]
         val type = getClass(groupNode["subcomponentGroupType"])
-        val sizeNode = groupNode.getNode("size")
+        val sizeNode = groupNode.."size"
         val minimumSize = sizeNode["min"].toInt()
         val maximumSize = sizeNode["max"].toInt()
         return ComponentGroup.Template(name, type, minimumSize, maximumSize)

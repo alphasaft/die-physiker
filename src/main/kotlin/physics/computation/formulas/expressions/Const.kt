@@ -1,10 +1,14 @@
 package physics.computation.formulas.expressions
 
 import physics.noop
+import physics.values.NeutralValuesFactory
 import physics.values.PhysicalDouble
+import physics.values.PhysicalValuesFactory
+import physics.values.units.NeutralUnitScope
+
 
 class Const(val value: PhysicalDouble) : Expression() {
-    constructor(value: Double): this(PhysicalDouble(value))
+    constructor(value: Double): this(NeutralValuesFactory.double(value))
     constructor(value: Int): this(value.toDouble())
 
     init {
@@ -15,7 +19,18 @@ class Const(val value: PhysicalDouble) : Expression() {
     override val size: Int = 1
 
     override fun toString(): String {
-        return value.toString()
+        val defaultRepr = value.toString()
+        if (value.isInt()) return defaultRepr
+
+        for (i in 1..100) {
+            if ((value*i).isInt()) {
+                val fractionalRepr = "${(value*i).toPhysicalInt()}/$i"
+                return if (fractionalRepr.length <= defaultRepr.length) fractionalRepr
+                else defaultRepr
+            }
+        }
+
+        return defaultRepr
     }
 
     override fun equals(other: Any?): Boolean {
@@ -44,6 +59,6 @@ class Const(val value: PhysicalDouble) : Expression() {
 
     operator fun plus(other: Const) = Const(value + other.value)
     operator fun minus(other: Const) = Const(value - other.value)
-    operator fun times(other: Const): Const = Const(value * other.value)
+    operator fun times(other: Const) = Const(value * other.value)
     operator fun div(other: Const) = Const(value / other.value)
 }

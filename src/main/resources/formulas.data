@@ -1,9 +1,11 @@
 La formule implicite "Volume d'une solution = somme des volumes des solutés + volume du solvant"
     concerne :
-        - S une Solution, avec Vs son volume
+        - S une Solution
         - X un Soluté de S.solutés, avec Vx son volume
         - A# des Soluté-s de S.solutés, avec Va# leurs volume-s
         - Sol un Solvant de S.solvant, avec Vsol son volume
+    renvoie :
+        S.volume ('Vs')
     on a :
         Vs = Vsol + Vx + (Va#}sum
     variables adaptables : Vs
@@ -12,6 +14,30 @@ La formule implicite "Volume d'une solution = somme des volumes des solutés + v
 La formule "Masse volumique en fonction de la masse et du volume"
     concerne :
         - S une Solution, avec V son volume
-        - X un Soluté de S.solutés, avec m sa masse, p sa masse volumique
+        - X un Soluté de S.solutés, avec m sa masse
+    renvoie :
+        X.masse volumique ('p')
     on a :
         p = m / V
+
+
+La base de données "Tableau périodique des éléments"
+    dans le fichier : "PeriodicTableOfElements.csv"
+    concerne : Atome
+    lie :
+        - nom -> Element
+        - numéro atomique -> AtomicNumber
+        - symbole -> Symbol
+    options :
+        - case_insensitive
+        - normalize
+
+
+La connaissance complexe "Lecture et écriture d'un tableau périodique"
+    concerne :
+        - X un Atome, avec Z son numéro atomique
+    renvoie :
+        X.configuration électronique ('config')
+    et déduit :
+        - config par configFromAtomicNumber
+        - Z par atomicNumberFromConfig

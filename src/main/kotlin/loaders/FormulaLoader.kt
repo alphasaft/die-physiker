@@ -3,6 +3,7 @@ package loaders
 import loaders.base.Ast
 import loaders.base.AstNode
 import loaders.base.DataLoader
+import physics.components.Component
 import physics.components.ComponentClass
 import physics.computation.ComponentRequirement
 import physics.computation.Location
@@ -11,7 +12,10 @@ import physics.computation.formulas.FormulaOptions
 import physics.computation.formulas.expressions.*
 
 
-class FormulaLoader(private val loadedComponentClasses: Map<String, ComponentClass>) : DataLoader<FormulaParser, Formula>(FormulaParser) {
+class FormulaLoader(
+    loadedComponentClasses: Map<String, ComponentClass>,
+    checks: Map<String, (Component, Map<String, Component>) -> Boolean> = emptyMap(),
+) : DataLoader<FormulaParser, Formula>(FormulaParser) {
     private companion object {
         val operatorPriorities = mapOf(
             "+" to 1,
@@ -30,51 +34,38 @@ class FormulaLoader(private val loadedComponentClasses: Map<String, ComponentCla
         )
     }
 
+    private val requirementsLoader = RequirementLoader(loadedComponentClasses, checks)
+
     override fun generateFrom(ast: Ast): Formula {
         val name = ast["name"]
         val implicit = ast.getOrNull("implicit") == "yes"
-        val outputVariable = ast["outputVariable"]
-        val requirements = generateRequirementsFrom(ast.getNode("requirements")).toMutableList()
-        val outputRequirement = requirements.single { outputVariable in it.ownedVariables }
-        val outputLocation = Location.At(outputRequirement.alias, outputRequirement.ownedVariables.getValue(outputVariable))
-        val expression = generateExpression(ast.getNode("expression"))
+        val requirements = generateRequirementsFrom(ast.."requirements").toMutableList()
+        val output = generateOutputFrom(ast.."output")
+        val equality = generateEquality(ast.."equality", outputVariable = output.first)
         val variablesToRenderSpecifically = generateVariablesToRenderSpecificallyList(ast.getNodeOrNull("adaptableVariables"))
-
-        requirements.replaceAll { if (outputRequirement === it) outputRequirement.withOptionalVariable(outputVariable) else outputRequirement }
 
         return Formula(
             Formula.ObtentionMethod.Builtin(name),
             requirements,
-            outputVariable to outputLocation,
-            outputVariable equal expression,
+            output,
+            equality,
             options = if (implicit) FormulaOptions.Implicit else 0,
             variablesToRenderSpecifically = variablesToRenderSpecifically,
         )
     }
 
     private fun generateRequirementsFrom(requirementsNode: AstNode): List<ComponentRequirement> {
-        return requirementsNode.allNodes("requirement-#").map { generateRequirementFrom(it) }
+        return requirementsNode.allNodes("requirement-#").map { requirementsLoader.generateFrom(it.toAst()) }
     }
 
-    private fun generateRequirementFrom(requirementNode: AstNode): ComponentRequirement {
-        val alias = requirementNode["alias"]
-        val type = loadedComponentClasses.getValue(requirementNode["type"])
-        val location = requirementNode.getOrNull("location")?.let { Location.At(it) } ?: Location.Any
-        val selectAll = "#" in alias
-        val variables = generateVariablesFrom(requirementNode.getNode("variables"))
-
-        return if (selectAll) ComponentRequirement.allRemaining(alias, type, location, variables)
-        else ComponentRequirement.single(alias, type, location, variables)
+    private fun generateOutputFrom(outputNode: AstNode): Pair<String, Location.At> {
+        return outputNode["variableName"] to Location.At(outputNode["location"])
     }
 
-    private fun generateVariablesFrom(variablesNode: AstNode): Map<String, String> {
-        return variablesNode.allNodes("variable-#").associate { generateVariableFrom(it) }
-    }
-
-    private fun generateVariableFrom(variableNode: AstNode): Pair<String, String> {
-        val variableName = variableNode["variableName"]
-        val field = variableNode["field"]
-        return variableName to field
+    private fun generateEquality(equalityNode: AstNode, outputVariable: String): Equality {
+        val left = generateExpression(equalityNode.."left")
+        val right = generateExpression(equalityNode.."left")
+        return (left equal right).isolateVariable(outputVariable)
     }
 
     private fun generateExpression(expressionNode: AstNode): Expression {
@@ -112,8 +103,8 @@ class FormulaLoader(private val loadedComponentClasses: Map<String, ComponentCla
             "integer" -> Const(operandNode["value"].toInt())
             "double" -> Const(operandNode["value"].toDouble())
             "variable" -> Var(operandNode["variableName"])
-            "expression" -> generateExpression(operandNode.getNode("subexpression"))
-            "multiVariablesCollector" -> All(generateExpression(operandNode.getNode("genericExpression")), operandNode["collector"])
+            "expression" -> generateExpression(operandNode.."subexpression")
+            "multiVariablesCollector" -> All(generateExpression(operandNode.."genericExpression"), operandNode["collector"])
             else -> throw NoWhenBranchMatchedException()
         }
     }

@@ -1,14 +1,17 @@
 package loaders.base
 
+import plus
 import java.io.File
 
+
+@Suppress("unused", "RemoveExplicitTypeArguments")
 abstract class Parser {
-    protected lateinit var remainingInput: String
+    lateinit var remainingInput: String
     private lateinit var initialInput: String
     private val currentCharNo: Int get() = initialInput.length - remainingInput.length
     private var mostAdvancedFailure: ParsingError? = null
 
-    private lateinit var ast: Ast
+    lateinit var ast: Ast
     private lateinit var astPath: MutableList<String>
 
     protected open val parasiteChars = "\r"
@@ -16,12 +19,14 @@ abstract class Parser {
     protected open val caseInsensitive = false
 
     protected val string = Regex("\".*?\"")
-    protected val identifier = Regex("[a-zA-Zéèçàù_][a-zA-Z0-9éèçàù_]*")
-    protected val integer = Regex("\\d+")
-    protected val double = Regex("\\d[.,]\\d")
+    protected val letter = Regex("[a-zA-Zéèçàùµ]")
+    protected val identifier = Regex("[${letter}_][${letter}\\d_]*")
+    protected val integer = Regex("-?\\d+")
+    protected val double = Regex("-?\\d+[.,]\\d+")
 
     fun parse(file: File) = parse(file.readText())
     fun parse(input: String, asSubParser: Boolean = false): Ast {
+        mostAdvancedFailure = null
         initialInput = (if (caseInsensitive) input.lowercase() else input).filterNot { it in parasiteChars }.trim { it in " \t\n\r" }
         remainingInput = initialInput
         ast = prepareAst(input)
@@ -29,13 +34,16 @@ abstract class Parser {
 
         axiom()
 
-        val ast = ast.copy()
-        if (asSubParser) consumeRegex("[.\n]*") else { eof() ; ast.lock() }
+        ast.content = initialInput.dropLast(remainingInput.length)
+        if (!asSubParser) {
+            eof()
+            ast.lock()
+        }
         return ast.clean()
     }
 
-    private fun prepareAst(input: String): Ast {
-        return Ast(input.filterNot { it in parasiteChars })
+    private fun prepareAst(@Suppress("UNUSED_PARAMETER") input: String): Ast {
+        return Ast()
     }
 
     protected abstract fun axiom()
@@ -50,8 +58,8 @@ abstract class Parser {
         ast.removeAllBranchesSafeFor(anchor.allAstBranches)
     }
 
-    private fun fail(message: String, errorCtr: (Pair<Int, Int>, String) -> ParsingError = ::SyntaxParsingError): Nothing {
-        updateMostAdvancedFailure(errorCtr(charNoAsPosition(), message))
+    private fun fail(message: String, errorCtr: (Pair<Int, Int>, List<String>, String) -> ParsingError = ::SyntaxParsingError): Nothing {
+        updateMostAdvancedFailure(errorCtr(charNoAsPosition(), astPath.toList(), message))
         throw mostAdvancedFailure!!
     }
 
@@ -64,11 +72,6 @@ abstract class Parser {
             || candidatePos.first > mostAdvancedFailurePos!!.first
             || ((candidatePos.first == mostAdvancedFailurePos.first) && (candidatePos.second > mostAdvancedFailurePos.second))
         ) candidate else mostAdvancedFailure
-    }
-
-    private fun charNoAsPosition(charNo: Int = currentCharNo): Pair<Int, Int> {
-        val consumedInput = initialInput.substring(0, charNo)
-        return consumedInput.count { it == '\n' }+1 to consumedInput.split("\n").last().length+1
     }
 
     private inline fun <T> ifBlockFails(block: () -> Unit, callback: (SyntaxParsingError) -> T): T? {
@@ -84,19 +87,33 @@ abstract class Parser {
         if (remainingInput != "") fail("Expected source input to end, got $remainingInput")
     }
 
+    private fun charNoAsPosition(charNo: Int = currentCharNo): Pair<Int, Int> {
+        val consumedInput = initialInput.substring(0, charNo)
+        return consumedInput.count { it == '\n' }+1 to consumedInput.split("\n").last().length+1
+    }
+
     private fun nextToken(): String {
         return when {
             remainingInput == "" -> ""
             remainingInput.first().isLetter() -> remainingInput.takeWhile { it.isLetter() || it.isDigit() }
             remainingInput.first().isDigit() -> remainingInput.takeWhile { it.isDigit() }
-            remainingInput.first() == '\n' -> "\\n"
+            remainingInput.first() == '\n' -> "<end of line>"
             else -> remainingInput.take(1)
         }
     }
 
     protected fun invokeAsSubParser(parser: Parser, groupName: String? = null) {
-        val producedSubAst = parser.parse(input = remainingInput, asSubParser = true)
-        val path = if (groupName == null) astPath else astPath.plus(groupName)
+        val offset = charNoAsPosition() + (Pair(-1, -1))
+        val path = if (groupName == null) astPath else astPath + groupName
+        val producedSubAst: Ast
+
+        try {
+            producedSubAst = parser.parse(input = remainingInput, asSubParser = true)
+        } catch (e: ParsingError) {
+            throw e.nestPath(path).withOffset(offset)
+        }
+
+        parser.mostAdvancedFailure?.let { updateMostAdvancedFailure(it.nestPath(path).withOffset(offset)) }
         consume(producedSubAst.content!!)
         ast.setNode(path, producedSubAst)
     }
@@ -117,7 +134,7 @@ abstract class Parser {
     protected fun consumeRegex(what: Regex) = consumeRegex(what.pattern)
     protected fun consumeRegex(what: String): String {
         val regex = Regex("^$what", options = if (caseInsensitive) setOf(RegexOption.IGNORE_CASE) else emptySet())
-        val matched = regex.find(remainingInput) ?: fail("Expected something matching $what, got ${remainingInput.split(*whitespaces.toCharArray()).first()}")
+        val matched = regex.find(remainingInput) ?: fail("Expected something matching '$what', got ${nextToken()}")
         remainingInput = remainingInput.drop(matched.value.length).dropWhile { it in whitespaces }
         return matched.value
     }
@@ -160,7 +177,8 @@ abstract class Parser {
             if (succeeded) return
 
             val anchor = ParsingAnchor()
-            ifBlockFails(encloseInGroup(groupName, block)) {
+            @Suppress("RemoveExplicitTypeArguments")
+            ifBlockFails<Nothing>(encloseInGroup(groupName, block)) {
                 updateMostAdvancedFailure(candidate = it)
                 recover(anchor)
                 return
@@ -184,7 +202,7 @@ abstract class Parser {
      * Repeats from [n] to [m] times the given block
      *  If [m] is -1 then the block will be executed [n] times, then until something fails to parse.
      */
-    protected fun between(n: Int, m: Int, groupName: String? = null, separator: String = "", block: () -> Unit) {
+    private fun between(n: Int, m: Int, groupName: String? = null, separator: String = "", block: () -> Unit) {
         require(m == -1 || (m > 0 && m >= n)) { "m should be -1 or greater than 0, and for the latter case greater than or equal to n."}
         require(groupName == null || '#' in groupName) { "groupName for repeatable blocks should be null or include '#'."}
 
@@ -238,14 +256,14 @@ abstract class Parser {
 
     protected fun negativeLookahead(block: () -> Unit) {
         val anchor = ParsingAnchor()
-        ifBlockFails(block) {
+        ifBlockFails<Nothing>(block) {
             recover(anchor)
             return
         }
         fail("Negative lookahead succeeded")
     }
 
-    protected inner class AllScope internal constructor() {
+    protected inner class AllScope internal constructor(private val separator: String) {
         private val combinations: MutableList<List<() -> Unit>> = mutableListOf(listOf())
 
         fun block(name: String? = null, block: () -> Unit) {
@@ -273,14 +291,20 @@ abstract class Parser {
             choice {
                 for (combination in combinations.sortedByDescending { it.size }) {
                     option {
-                        for (block in combination) block()
+                        if (combination.isNotEmpty()) {
+                            combination.first().invoke()
+                            for (block in combination.drop(1)) {
+                                consume(separator)
+                                block()
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    protected fun all(block: AllScope.() -> Unit) {
-        return AllScope().apply(block).run()
+    protected fun all(separator: String = "", block: AllScope.() -> Unit) {
+        return AllScope(separator).apply(block).run()
     }
 }

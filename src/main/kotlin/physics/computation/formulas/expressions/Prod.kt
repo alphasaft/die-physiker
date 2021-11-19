@@ -48,6 +48,9 @@ class Prod(factors: List<Expression>) : Expression() {
         )
         return if (simplifiedMembers.size == 1) simplifiedMembers.single() else Prod(simplifiedMembers)
     }
+    
+    private fun Expression.isConstWithValue(value: Int) = isConstWithValue(value.toDouble())
+    private fun Expression.isConstWithValue(value: Double) = this is Const && this.value.toDouble() == value
 
     private fun writeDivisionsAsProducts(members: List<Expression>): List<Expression> {
         return members.map { if (it is Div) it.writeAsProduct() else it }
@@ -71,8 +74,8 @@ class Prod(factors: List<Expression>) : Expression() {
     private fun applyTheSignsRule(members: List<Expression>): List<Expression> {
         if (members.size <= 1) return members
 
-        val minuses = members.count { it is Minus || it == Const(-1) }
-        val unsignedMembers = members.map { if (it is Minus) it.value else it }.filter { it != Const(-1) }
+        val minuses = members.count { it is Minus || it.isConstWithValue(-1) }
+        val unsignedMembers = members.map { if (it is Minus) it.value else it }.filterNot { it.isConstWithValue(-1) }
         return if (minuses % 2 == 0)
             unsignedMembers
         else
@@ -94,14 +97,12 @@ class Prod(factors: List<Expression>) : Expression() {
 
         val result = mutableListOf<Expression>()
         for ((expression, coefficient) in expressionsToCoefficients) {
-            result.add(
-                when {
-                    coefficient == Const(0) -> Const(1)
-                    coefficient == Const(1) -> expression
-                    expression is Div && expression.dividend == Const(1) -> Pow(expression.divider, -coefficient).simplify()
-                    else -> Pow(expression, coefficient).simplify()
-                }
-            )
+            result.add(when {
+                coefficient.isConstWithValue(0) -> continue
+                coefficient.isConstWithValue(1) -> expression
+                expression is Div && expression.dividend.isConstWithValue(1) -> Pow(expression.divider, -coefficient).simplify()
+                else -> Pow(expression, coefficient).simplify()
+            })
         }
         return result
     }
@@ -109,17 +110,18 @@ class Prod(factors: List<Expression>) : Expression() {
     private fun getUnderlyingExpressionAndCoefficient(member: Expression): Pair<Expression, Expression> {
         return when {
             member is Pow -> member.x to member.exponent
-            member is Div && member.dividend == Const(1) -> getUnderlyingExpressionAndCoefficient(member.divider).let { it.first to -it.second }
+            member is Div && member.dividend.isConstWithValue(1) -> getUnderlyingExpressionAndCoefficient(member.divider).let { it.first to -it.second }
             else -> member to Const(1)
         }
     }
 
     private fun removeProductsByOne(members: List<Expression>): List<Expression> {
-        return members.filterNot { it == Const(1)  }
+        return members.filterNot { it.isConstWithValue(1)  }
     }
 
     private fun zeroIfAnyMemberIsZero(members: List<Expression>): List<Expression> {
-        return if (members.any { it == Const(0) }) listOf(Const(0)) else members
+        val zero = members.firstOrNull { it.isConstWithValue(0) }
+        return if (zero != null) listOf(zero) else members
     }
 
     private fun oneIfEmpty(members: List<Expression>): List<Expression> {

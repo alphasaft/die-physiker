@@ -12,7 +12,6 @@ import physics.computation.formulas.expressions.Equality
 import physics.computation.formulas.expressions.Var
 import physics.computation.formulas.expressions.equal
 import physics.values.*
-import println
 
 
 class Formula(
@@ -54,7 +53,8 @@ class Formula(
     }
 
     init {
-        require(outputVariable == equality.variable) { "The variable used as output should be the same as the one used in the equality." }
+        require(equality.left is Var) { "Expected a variable as the left member of the equality" }
+        require(outputVariable == equality.left.name) { "The variable used as output should be the same as the one used in the equality." }
     }
 
     private val implicit = FormulaOptions.Implicit and options != 0
@@ -185,11 +185,13 @@ class Formula(
         val outputOwner = system.findFieldOwner(field)
         val fields = selectRequiredFieldsIn(system, outputOwner)
 
-        var (variable, expression) = equality
+        var variable = equality.left as Var
+        var expression = equality.right
+
         for ((variableName, notation) in fields.mapValues { (_, v) -> v.getNotationFor(system.findFieldOwner(v)) }) {
             if (variableName !in variablesToRenderSpecifically) continue
 
-            if (variableName == variable) variable = notation
+            if (variableName == variable.name) variable = Var(notation)
             expression = expression.substitute(Var(variableName), Var(notation))
         }
         return (variable equal expression).toFlatString()

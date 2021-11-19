@@ -15,12 +15,3 @@ sealed interface PhysicalValue<V : Any> {
         fun fromString(value: String): T
     }
 }
-
-inline fun <reified T : PhysicalValue<*>> PhysicalValue<*>.castAs() = castAs(T::class)
-fun <T : PhysicalValue<*>> PhysicalValue<*>.castAs(kClass: KClass<T>) =
-    @Suppress("UNCHECKED_CAST") (when (kClass) {
-        PhysicalInt::class -> toPhysicalInt()
-        PhysicalDouble::class -> toPhysicalDouble()
-        PhysicalString::class -> toPhysicalString()
-        else -> throw NoWhenBranchMatchedException()
-    } as T)

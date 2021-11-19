@@ -26,7 +26,7 @@ open class Pow(val x: Expression, val exponent: Expression) : Expression() {
 
         return when {
             exponent is Log && exponent.base == x -> exponent.x
-            x is Const && exponent is Const -> Const(x.value.pow(exponent.value))
+            x is Const && x.value.isConstant && exponent is Const -> Const(x.value.pow(exponent.value))
             x is Pow -> x.x.pow(x.exponent * exponent)
             exponent == Const(1) -> x
             exponent == Const(0) -> Const(1)

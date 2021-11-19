@@ -19,6 +19,8 @@ object ComponentClassesParser : Parser() {
             consume("\n")
             subcomponents()
         }
+        // TODO : Add the 'representation' block
+        // TODO : Add error gestion in the 'consume' / 'consumeRegex' method
     }
 
     private fun header() {

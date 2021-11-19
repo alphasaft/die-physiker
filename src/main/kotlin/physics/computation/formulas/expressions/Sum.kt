@@ -75,7 +75,7 @@ class Sum(terms: List<Expression>): Expression() {
     }
 
     private fun removeZeros(members: List<Expression>): List<Expression> {
-        return members.filterNot { it is Const && it.value == PhysicalDouble(0.0) }
+        return members.filterNot { it is Const && it.value.toDouble() == 0.0 }
     }
 
     private fun addUpSimilarMembers(members: List<Expression>): List<Expression> {
@@ -165,13 +165,13 @@ class Sum(terms: List<Expression>): Expression() {
             when (member) {
                 is Prod -> Prod(member.members.map { if (it is Const && it.value < 0) -it else it }).let { if (it != member) negative.add(it) else positive.add(it)  }
                 is Minus -> negative.add(member.value)
+                is Const -> if (member.value < 0) negative.add(-member) else positive.add(member)
                 else -> positive.add(member)
             }
         }
-
         return when {
             negative.isEmpty() -> positive
-            positive.isEmpty() -> listOf(-Sum(negative))
+            positive.isEmpty() -> listOf(Minus(Sum(negative)))
             else -> listOf(Sub(Sum(positive).simplify(), Sum(negative).simplify()))
         }
     }

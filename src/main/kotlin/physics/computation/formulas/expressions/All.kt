@@ -2,7 +2,6 @@ package physics.computation.formulas.expressions
 
 import physics.noop
 import physics.values.PhysicalDouble
-import println
 
 class All(
     val genericExpression: Expression,
@@ -20,9 +19,8 @@ class All(
             "sum" to { it.reduce(PhysicalDouble::plus) },
             "product" to { it.reduce(PhysicalDouble::times) },
             "mid" to { it.reduce(PhysicalDouble::plus) / it.size },
-            "max" to { it.maxOrNull() ?: PhysicalDouble(0.0) },
-            "min" to { it.minOrNull() ?: PhysicalDouble(0.0) },
-            "size" to { PhysicalDouble(it.size.toDouble()) }
+            "max" to { it.maxOrNull()!! },
+            "min" to { it.minOrNull()!! },
         )
     }
 

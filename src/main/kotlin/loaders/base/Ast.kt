@@ -1,9 +1,6 @@
 package loaders.base
 
-class Ast(source: String) : AstNode() {
-    init {
-        content = source
-    }
+class Ast : AstNode() {
 
     internal fun removeAllBranchesSafeFor(branches: Set<List<String>>) {
         requireUnlocked()

@@ -1,7 +1,6 @@
 package physics
 
 import Mapper
-import Predicate
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToLong
@@ -73,8 +72,4 @@ internal infix fun <E> Collection<E>.amputatedOf(other: Iterable<E>): List<E> {
     val result = toMutableList()
     for (item in other) result.remove(item)
     return result
-
 }
-
-
-

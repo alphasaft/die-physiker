@@ -12,7 +12,9 @@ open class PhysicsException(message: String): Exception(message)
 
 open class UnitException(message: String): PhysicsException(message)
 
-class AmbiguousUnitException(signature: PhysicalUnit): UnitException("Unit $signature is ambiguous.")
+class UnknownUnitException(unit: PhysicalUnit) : UnitException("Unit '$unit' wasn't declared, or comports undeclared parts.")
+
+class AmbiguousUnitException(unit: PhysicalUnit): UnitException("Unit $unit is ambiguous.")
 
 class IncompatibleUnitsException(unit1: PhysicalUnit, unit2: PhysicalUnit): UnitException("Units $unit1 and $unit2 are incompatible and thus this operation cannot succeed.")
 

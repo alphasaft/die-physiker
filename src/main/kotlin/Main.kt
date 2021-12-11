@@ -1,154 +1,30 @@
+@file:Suppress("LocalVariableName", "SpellCheckingInspection")
+
 import loaders.ComponentClassesLoader
 import loaders.KnowledgeLoader
-import loaders.UnitsLoader
-import physics.components.ComponentClass
-import physics.components.ComponentGroup
-import physics.components.Field
-import physics.computation.formulas.Formula
-import physics.computation.ComponentRequirement
-import physics.computation.Location
-import physics.computation.formulas.FormulaOptions
-import physics.computation.formulas.expressions.*
+import loaders.UnitScopeLoader
+import loaders.mpsi.ScriptLoader
+import loaders.mpsi.ScriptParser
+import physics.components.*
+import physics.dynamic.Action
 import physics.values.*
-import physics.values.units.PhysicalUnit
 import java.io.File
 import java.lang.StringBuilder
 import kotlin.math.min
 
 
 fun main() {
-    // TODO : Avoid variables crashes when merging formulas together, and maybe change the way adaptable variables are
-    //  handled
 
-    val scope = UnitsLoader.loadFrom(File("${cwd()}\\resources\\units.data"))
+    // TODO : Avoid variables crashes when merging formulas together
+
+
+    val scope = UnitScopeLoader.loadFrom(File("${cwd()}\\resources\\units.data"))
     val valuesFactory = PhysicalValuesFactory(scope)
-    val componentClasses2 = ComponentClassesLoader(valuesFactory, emptyList(), emptyMap(), emptyMap()).loadFrom(File("${cwd()}\\resources\\components.data"))
-    val knowledge2 = KnowledgeLoader(componentClasses2, emptyMap(), emptyMap()).loadFrom(File("${cwd()}\\resources\\formulas.data"))
+    val knowledgeFunctionsRegister = KnowledgeLoader.getFunctionsRegister()
+    val componentClassesFunctionsRegister = ComponentClassesLoader.getFunctionsRegister()
+    val scriptFile = File("${cwd()}\\resources\\script.mpsi")
 
-    val constants = ComponentClass("Constants",
-        fieldsTemplates = listOf(
-            Field.Template("G", valuesFactory.doubleFactoryWithUnit("N.kg-2.m2")),
-            Field.Template("g", valuesFactory.doubleFactoryWithUnit("N.kg-1")),
-        )
-    ).invoke(
-        fieldValuesAsStrings = mapOf(
-            "G" to "6.67*10^-11",
-            "g" to "9.81",
-        )
-    )
-
-    val VolumeOwner = ComponentClass(
-        "VolumeOwner",
-        abstract = true,
-        fieldsTemplates = listOf(
-            Field.Template("volume", notation = "V", valuesFactory.doubleFactoryWithUnit("L")),
-        ),
-    )
-
-    val Solvant = ComponentClass("Solvant", extends = listOf(VolumeOwner))
-    val Solute = ComponentClass("Solute",
-        extends = listOf(VolumeOwner),
-
-        fieldsTemplates = listOf(
-            Field.Template("masse", "m", valuesFactory.doubleFactoryWithUnit("kg")),
-            Field.Template("masse volumique", "p", valuesFactory.doubleFactoryWithUnit("kg.L-1")),
-        )
-    )
-
-    val Solution = ComponentClass("Solution",
-        fieldsTemplates = listOf(
-            Field.Template("masse", "m", valuesFactory.doubleFactoryWithUnit("kg")),
-            Field.Template("volume", "V(?)|V", valuesFactory.doubleFactoryWithUnit("L")),
-        ),
-        subcomponentsGroupsTemplates = listOf(
-            ComponentGroup.Template("solutés", contentType = Solute),
-            ComponentGroup.Template("solvant", contentType = Solvant, minimumSize = 1, maximumSize = 1)
-        ),
-        representationField = "masse"
-    )
-
-    val Atome = ComponentClass(
-        "Atome",
-        fieldsTemplates = listOf(
-            Field.Template("nom", valuesFactory.stringFactory()),
-            Field.Template("symbole", valuesFactory.stringFactory()),
-            Field.Template("numéro atomique", valuesFactory.intFactory()),
-            Field.Template("configuration électronique", valuesFactory.stringFactory { it matches Regex("(\\(\\d[spdf]\\)\\d{1,2})+") }),
-        )
-    )
-
-    val formula1 = Formula(
-        name = "Volume = somme des volumes des constituants",
-
-        ComponentRequirement.single("S", type = Solution, location = Location.Any, variables = mapOf("Vs" to "volume")),
-        ComponentRequirement.single("Sol", type = Solvant, location = Location.At("S.solvant"), variables = mapOf("Vsol" to "volume")),
-        ComponentRequirement.single("X", type = Solute, location = Location.At("S.solutés"), variables = emptyMap()),
-        ComponentRequirement.allRemaining("A#", type = Solute, location = Location.At("S.solutés"), variables = mapOf("Va#" to "volume")),
-
-        output = "Vx" to Location.At("X.volume"),
-        expression = "Vx" equal Var("Vs") - (Var("Vsol") + All("Va#", collectorName = "sum")),
-
-        options = FormulaOptions.Implicit
-    )
-
-    val formula2 = Formula(
-        "Masse volumique en fonction de la masse et du volume",
-
-        ComponentRequirement.single("S", type = Solution, location = Location.Any, variables = mapOf("V" to "volume")),
-        ComponentRequirement.single("X", type = Solute, location = Location.At("S.solutés"), variables = mapOf("m" to "masse")),
-
-        output = "p" to Location.At("X.masse volumique"),
-        expression = "p" equal Var("m") / Var("V"),
-    )
-
-    /*
-    val oxydoreduction = Reaction(
-        "Oxdoréduction",
-
-        ComponentRequirement.single("S", type = Solution, location = Location.Any, variables = emptyMap()),
-        ComponentRequirement.single("X", type = Atome, location = Location.At("S.solutés"), variables = mapOf("xName" to "name")),
-        ComponentRequirement.single("Y", type = Atome, location = Location.At("S.solutés"), variables = mapOf("yName" to "name"), condition = {
-            component, components ->
-            oxydoreductionBetweenTheseExists(component.name, components.getValue("X").name)
-        }),
-
-        modified = { components: MutableNonNullableMap<String, Component> ->
-            val (newX, newY) = oxydoreductionReact(components["X"], components["Y"])
-
-            components["S"] = components["S"] {
-                modify("solutés") {
-                    - components["X"]
-                    - components["Y"]
-                    + newX
-                    + newY
-                }
-
-                field("hello") .. PhysicalString("yo")
-            }
-        },
-
-        trace = ReactionTrace(...)  // TODO
-    )
-     */
-
-    val knowledge = listOf(formula1, formula2)
-
-    val solvant = Solvant(fieldValuesAsStrings = mapOf("volume" to "Ve = 0.70 L"))
-    val solute1 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.20 L", "masse" to "20 g"))
-    val solute2 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.30 L", "masse volumique" to "20 g.L-1"))
-    val solute3 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.30 L"))
-    val solutes = listOf(solute1, solute2, solute3)
-    val solution = Solution(subcomponentGroupsContents = mapOf("solutés" to solutes, "solvant" to listOf(solvant)))
-    val atome = Atome(fieldValuesAsStrings = mapOf("numéro atomique" to "29"))
-    val componentClasses = mapOf("Solution" to Solution, "Soluté" to Solute, "Solvant" to Solvant, "Atome" to Atome)
-
-    solution.fillFieldsWithTheirValuesUsing(knowledge)
-
-    println(solution)
-    println()
-    println(atome)
-
-    fun configFromAtomicNumber(arguments: Map<String, PhysicalValue<*>>): PhysicalString {
+    knowledgeFunctionsRegister.addStandardKnowledgeImplementation("configFromAtomicNumber") { arguments ->
         var remainingElectrons = (arguments["Z"]!!.toPhysicalInt()).value
         val subshellNames = mapOf(0 to "s", 1 to "p", 2 to "d", 3 to "f")
         val config = StringBuilder()
@@ -172,14 +48,82 @@ fun main() {
             }
         }
 
-        return valuesFactory.string(config.toString())
+        valuesFactory.string(config.toString())
     }
 
-    fun atomicNumberFromConfig(arguments: Map<String, PhysicalValue<*>>): PhysicalInt {
-        val config = arguments["config"] as PhysicalString
-        return valuesFactory.int(config.split(")").sumOf { it.split("(").first().ifEmpty { "0" }.toInt() })
+    knowledgeFunctionsRegister.addStandardKnowledgeImplementation("atomicNumberFromConfig") { arguments ->
+        val config = arguments.getValue("config").toPhysicalString()
+        valuesFactory.int(config.split(")").sumOf { it.split("(").first().ifEmpty { "0" }.toInt() })
     }
 
-    val equality = ln(Var("E")) / ln(Const(10)) equal Const(4.8) + (Const(3)/Const(2)) * Var("M")
-    val mappers = mapOf("configFromAtomicNumber" to ::configFromAtomicNumber, "atomicNumberFromConfig" to ::atomicNumberFromConfig)
+    val componentClasses = ComponentClassesLoader(valuesFactory, emptyList(), componentClassesFunctionsRegister).loadFrom(File("${cwd()}\\resources\\components.data"))
+    val knowledge = KnowledgeLoader(componentClasses, knowledgeFunctionsRegister).loadFrom(File("${cwd()}\\resources\\formulas.data"))
+
+    val constants = ComponentClass("Constants",
+        structure = ComponentStructure(
+            fieldsTemplates = listOf(
+                Field.Template("G", valuesFactory.doubleFactoryWithUnit("N.kg-2.m2")),
+                Field.Template("g", valuesFactory.doubleFactoryWithUnit("N.kg-1")),
+            )
+        )
+    ).invoke(
+        fieldValuesAsStrings = mapOf(
+            "G" to "6.67*10^-11",
+            "g" to "9.81",
+        )
+    )
+
+    val Solvant = componentClasses.getValue("Solvant")
+    val Solute = componentClasses.getValue("Soluté")
+    val Solution = componentClasses.getValue("Solution")
+    val Atome = componentClasses.getValue("Atome")
+
+    val myReactions = mapOf(
+        "Cu,H" to "Fe,Ni"
+    )
+
+    fun oxydoreductionBetweenTheseExists(c1: String, c2: String): Boolean = "$c1,$c2" in myReactions
+
+    fun oxydoreductionImpl(components: Map<String, Component>, arguments: Map<String, PhysicalValue<*>>) {
+        val (xName, yName) = arguments.getValue("xName") to arguments.getValue("yName")
+        val (newX, newY) = myReactions.getValue("$xName,$yName").split(",").let { (p1, p2) -> Atome(fieldValuesAsStrings = mapOf("name" to p1)) to Atome(fieldValuesAsStrings = mapOf("name" to p2)) }
+
+        (components.getValue("S")) {
+            group("solutés") {
+                -components.getValue("X")
+                -components.getValue("Y")
+                +newX
+                +newY
+            }
+        }
+    }
+
+    val oxydoreduction = Action(
+        "Oxdoréduction",
+
+        RequirementsHandler(
+            ComponentRequirement.single("S", type = Solution, location = Location.Any, variables = emptyMap()),
+            ComponentRequirement.single("X", type = Atome, location = Location.At("S.solutés"), variables = mapOf("xSymbol" to "symbole")),
+            ComponentRequirement.single("Y", type = Atome, location = Location.At("S.solutés"), variables = mapOf("ySymbol" to "symbole"), condition = {
+                component, components ->
+                oxydoreductionBetweenTheseExists(component["symbole"], components.getValue("X")["symbole"])
+            })
+        ),
+
+        actionImpl = ::oxydoreductionImpl
+    )
+
+    val solvant = Solvant(fieldValuesAsStrings = mapOf("volume" to "Ve = 0.70 L"))
+    val solute1 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.20 L", "masse" to "20 g"))
+    val solute2 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.30 L", "masse volumique" to "20 g.L-1"))
+    val solute3 = Solute(fieldValuesAsStrings = mapOf("volume" to "0.30 L"))
+    val solutes = listOf(solute1, solute2, solute3)
+    val solution = Solution(subcomponentGroupsContents = mapOf("solutés" to solutes, "solvant" to listOf(solvant)))
+    val atome = Atome(fieldValuesAsStrings = mapOf("numéro atomique" to "29"))
+
+    solution.fillFieldsWithTheirValuesUsing(knowledge)
+    atome.fillFieldsWithTheirValuesUsing(knowledge)
+
+    println(ScriptParser.parse(scriptFile))
+    println(ScriptLoader(valuesFactory, componentClasses).loadFrom(scriptFile))
 }

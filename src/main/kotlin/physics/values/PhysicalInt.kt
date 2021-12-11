@@ -29,4 +29,12 @@ class PhysicalInt(
     override fun toString(): String {
         return value.toString()
     }
+
+    override fun equals(other: Any?): Boolean {
+        return other is PhysicalInt && value == other.value
+    }
+
+    override fun hashCode(): Int {
+        return value.hashCode()
+    }
 }

@@ -44,11 +44,7 @@ class PhysicalUnit(private val scope: UnitScope, internal val signature: UnitSig
     }
 
     operator fun div(other: PhysicalUnit): PhysicalUnit {
-        if (other != this && scope.isConvertible(this, other)) throw ConversionNeededException(other, this)
-
-        return PhysicalUnit(scope, signature
-            .mergedWith(other.signature.mapValues { (_, exponent) -> -exponent }, merge = Int::plus)
-            .filterValues { it != 0 })
+        return this * other.invert()
     }
 
     fun invert(): PhysicalUnit {
@@ -56,8 +52,10 @@ class PhysicalUnit(private val scope: UnitScope, internal val signature: UnitSig
     }
 
     operator fun plus(other: PhysicalUnit): PhysicalUnit {
-        when {
-            signature == other.signature || isNeutral() || other.isNeutral() -> return this
+        return when {
+            isNeutral() -> other
+            other.isNeutral() -> this
+            signature == other.signature -> this
             scope.isConvertible(this, other) -> throw ConversionNeededException(other, this)
             else -> throw IncompatibleUnitsException(this, other)
         }

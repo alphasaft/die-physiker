@@ -1,10 +1,14 @@
 package physics.components
 
 import physics.*
-import physics.computation.PhysicalKnowledge
-import physics.titlecase
+import physics.computation.BasePhysicalKnowledge
+import physics.dynamic.Action
+import physics.dynamic.Behavior
 import physics.values.PhysicalValue
-
+import println
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
 
@@ -12,40 +16,77 @@ import kotlin.reflect.full.isSubclassOf
 class ComponentClass(
     val name: String,
     val abstract: Boolean = false,
-    extends: List<ComponentClass> = emptyList(),
-    fieldsTemplates: List<Field.Template<*>> = emptyList(),
-    subcomponentsGroupsTemplates: List<ComponentGroup.Template> = emptyList(),
+    val structure: ComponentStructure = ComponentStructure(),
     representationField: String? = null,
-) {
-    private val bases = extends
-    private val allBases: List<ComponentClass> = bases + bases.map { it.allBases }.flatten()
-    private val fieldsTemplates: List<Field.Template<*>> = fieldsTemplates + bases.map { it.fieldsTemplates }.flatten()
-    private val subcomponentsGroupsTemplates: List<ComponentGroup.Template> = subcomponentsGroupsTemplates + bases.map { it.subcomponentsGroupsTemplates }.flatten()
-    private val representationField: String? = representationField ?: allBases.firstOrNull()?.representationField
-
-    val fields get() = fieldsTemplates.map { it.name }
-    val hasCustomRepresentation get() = representationField != null
+) : ComponentClassifier {
+    private val representationField: String? = representationField ?: structure.bases.firstOrNull()?.representationField
 
     init {
         if (representationField != null) {
-            require(representationField.isNotBlank())  { "Representation field shouldn't be blank." }
-            require(representationField in fields) { "Chosen representation field '$representationField' isn't an existing field. " }
+            require(representationField.isNotBlank()) { "Representation field shouldn't be blank." }
+            require(representationField in structure.fieldsNames) { "Chosen representation field '$representationField' isn't an existing field. " }
+        }
+    }
+
+    override fun toString(): String {
+        return "component class $name"
+    }
+
+    infix fun inheritsOf(componentClass: ComponentClass): Boolean {
+        return componentClass == this || componentClass in structure.bases
+    }
+
+    @OptIn(ExperimentalContracts::class)
+    private inline fun tryToInstantiate(instantiationBlock: () -> Unit) {
+        contract {
+            callsInPlace(instantiationBlock, InvocationKind.EXACTLY_ONCE)
+        }
+
+        if (abstract) throw AbstractComponentInstantiationError(name)
+        try {
+            instantiationBlock()
+        } catch (e: ComponentException) {
+            throw ComponentInstantiationError(name, e)
+        }
+    }
+
+    operator fun invoke(
+        fieldValuesAsStrings: Map<String, String> = emptyMap(),
+        subcomponentGroupsContents: Map<String, List<Component>> = emptyMap(),
+        behaviorsImplementations: Map<String, Action> = emptyMap()
+    ): Instance {
+        tryToInstantiate {
+            fieldValuesAsStrings.keys.find { name -> structure.fieldsTemplates.none { it.name == name } }
+                ?.also { throw FieldNotFoundException(it, name) }
+            subcomponentGroupsContents.keys.find { name -> structure.subcomponentsGroupsTemplates.none { it.name == name } }
+                ?.also { throw ComponentGroupNotFoundException(it, name) }
+            behaviorsImplementations.keys.find { name -> structure.behaviorsTemplates.none { it.name == name } }
+                ?.also { throw BehaviorNotFoundException(it, name) }
+
+            val fields = structure.fieldsTemplates.map { it.newField(fieldValuesAsStrings[it.name]) }
+            val subcomponents = structure.subcomponentsGroupsTemplates.map { it.newGroup(subcomponentGroupsContents[it.name] ?: emptyList())}
+            val behaviors = structure.behaviorsTemplates.map { it.newBehavior(behaviorsImplementations[it.name]) }
+            return Instance(fields, subcomponents, behaviors)
         }
     }
 
     inner class Instance internal constructor(
         val fields: List<Field<*>>,
-        subcomponentsGroups: List<ComponentGroup>,
+        val subcomponentsGroups: List<ComponentGroup>,
+        private val behaviors: List<Behavior>
     ) {
+
         val componentClass = this@ComponentClass
         val name = componentClass.name
-        private val subcomponentsGroups = subcomponentsGroups.toMutableList()
         private val knownFieldsCount: Int get() = fields.count { it.isKnown() } + subcomponentsGroups.sumOf { g -> g.content.sumOf { c -> c.knownFieldsCount } }
 
+        init {
+            update()
+        }
+
         @JvmName("getFieldAsPhysicalValue")
-        fun getField(fieldName: String) = getField<PhysicalValue<*>>(fieldName)
-        inline fun <reified T : PhysicalValue<*>> getField(fieldName: String): Field<T> = getField(fieldName, T::class)
-        fun <T : PhysicalValue<*>> getField(fieldName: String, kClass: KClass<T>): Field<T> {
+        fun getField(fieldName: String) = getField(fieldName, PhysicalValue::class)
+        private fun <T : PhysicalValue<*>> getField(fieldName: String, kClass: KClass<T>): Field<T> {
             val field = fields.find { it.name == fieldName } ?: throw FieldNotFoundException(fieldName, name)
             if (!field.type.isSubclassOf(kClass)) throw FieldCastException(field, kClass)
             return (@Suppress("UNCHECKED_CAST") (field as Field<T>))
@@ -61,61 +102,57 @@ class ComponentClass(
             return getField(fieldName, kClass).getContentOrNull()
         }
 
-        fun hasSubcomponentGroup(groupName: String): Boolean = subcomponentsGroups.any { it.name == groupName }
-
         fun getSubcomponentGroup(groupName: String): ComponentGroup = subcomponentsGroups
             .find { it.name == groupName }
             ?: throw ComponentGroupNotFoundException(groupName, name)
-
-        fun modifySubcomponentGroupContent(groupName: String, newContent: List<Component>) {
-            val oldGroup = subcomponentsGroups.single { it.name == groupName }
-            subcomponentsGroups.remove(oldGroup)
-            subcomponentsGroups.add(oldGroup.copy(content = newContent))
-        }
-
-        infix fun instanceOf(componentClass: ComponentClass) = this.componentClass.inheritsOf(componentClass)
-        infix fun notInstanceOf(componentClass: ComponentClass) = !(this instanceOf componentClass)
 
         fun allSubcomponents(): List<Component> =
             subcomponentsGroups
                 .map { it.content.map { c -> c.allSubcomponents() + c }.flatten() }
                 .flatten()
 
-        fun fillFieldsWithTheirValuesUsing(knowledge: List<PhysicalKnowledge>, system: PhysicalSystem = PhysicalSystem(this)) {
+        infix fun instanceOf(componentClassifier: ComponentClassifier): Boolean {
+            return when (componentClassifier) {
+                is ComponentClass -> this.componentClass inheritsOf componentClassifier
+                is ComponentClassForwardRef -> this.componentClass.name == componentClassifier.className
+            }
+        }
+
+        infix fun notInstanceOf(componentClass: ComponentClassifier) = !(this instanceOf componentClass)
+        operator fun contains(subcomponent: Component): Boolean = subcomponentsGroups.any { subcomponent in it }
+
+        fun fillFieldsWithTheirValuesUsing(
+            knowledge: List<BasePhysicalKnowledge>,
+            system: PhysicalSystem = PhysicalSystem(this)
+        ) {
             var oldKnownFieldsCount = knownFieldsCount
             while (true) {
-                for (anyKnowledge in knowledge) {
-                    for (field in fields) {
-                        if (field.isKnown()) continue
-                        try { anyKnowledge.fillFieldWithItsValue(field, system) }
-                        catch (e: KnowledgeException) { continue }
-                        break
-                    }
+                for (anyKnowledge in knowledge) for (field in fields) {
+                    if (field.isKnown()) continue
+                    try { anyKnowledge.fillFieldWithItsValue(field, system) }
+                    catch (e: InappropriateKnowledgeException) { continue }
+                    break
+                }
 
-                    for (group in subcomponentsGroups) for (component in group.content) {
-                        component.fillFieldsWithTheirValuesUsing(knowledge, system)
-                    }
+                for (group in subcomponentsGroups) for (component in group.content) {
+                    component.fillFieldsWithTheirValuesUsing(knowledge, system)
                 }
 
                 if (knownFieldsCount == oldKnownFieldsCount) break
                 oldKnownFieldsCount = knownFieldsCount
+                update()
             }
         }
 
-        // Modifier
-        operator fun invoke(modifier: ComponentModifier.() -> Unit): Component {
-            return ComponentModifier(this).apply(modifier).build()
+        private fun update() {
+            for (behavior in behaviors) {
+                behavior.applyRepetitivelyOn(this)
+            }
         }
 
-        fun copy(): Component {
-            return Instance(
-                fields.map { it.copy() },
-                subcomponentsGroups.map { it.copy() }
-            )
+        operator fun invoke(modifier: ComponentModifier.() -> Unit) {
+            ComponentModifier(this).apply(modifier)
         }
-
-        operator fun contains(subcomponent: Component): Boolean =
-            subcomponentsGroups.any { subcomponent in it }
 
         override fun toString(): String {
             return if (representationField != null && getOrNull<PhysicalValue<*>>(representationField) != null) toStringCustom()!!
@@ -127,7 +164,7 @@ class ComponentClass(
             return getOrNull<PhysicalValue<*>>(representationField)?.toString()
         }
 
-        private fun toStringDefault(): String {
+        fun toStringDefault(): String {
             val newline = "\n    "
             val builder = StringBuilder()
 
@@ -167,27 +204,5 @@ class ComponentClass(
             result = 31 * result + componentClass.hashCode()
             return result
         }
-    }
-
-    operator fun invoke(
-        fieldValuesAsStrings: Map<String, String> = emptyMap(),
-        subcomponentGroupsContents: Map<String, List<Component>> = emptyMap(),
-    ): Instance {
-        if (abstract) throw AbstractComponentInitializationError(name)
-
-        fieldValuesAsStrings.keys.find { name -> fieldsTemplates.none { it.name == name } }?.also { throw FieldNotFoundException(it, name) }
-        subcomponentGroupsContents.keys.find { name -> subcomponentsGroupsTemplates.none { it.name == name } }?.also { throw ComponentGroupNotFoundException(it, name) }
-
-        val fields = fieldsTemplates.map { it.newField(fieldValuesAsStrings[it.name]) }
-        val subcomponents = subcomponentsGroupsTemplates.map { it.newGroup(subcomponentGroupsContents[it.name] ?: emptyList()) }
-        return Instance(fields, subcomponents)
-    }
-
-    infix fun inheritsOf(componentClass: ComponentClass): Boolean {
-        return componentClass == this || componentClass in allBases
-    }
-
-    override fun toString(): String {
-        return "component class $name"
     }
 }

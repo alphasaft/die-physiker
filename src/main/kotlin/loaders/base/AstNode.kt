@@ -31,7 +31,7 @@ open class AstNode {
     }
 
     internal open fun clean(): AstNode {
-        return if (children.isEmpty()) AstLeaf(content!!)
+        return if (children.isEmpty()) AstLeaf(content ?: "")
         else AstNode().apply {
             content = this@AstNode.content
             childrenStorage.putAll(this@AstNode.children.mapValues { (_, c) -> c.clean() })

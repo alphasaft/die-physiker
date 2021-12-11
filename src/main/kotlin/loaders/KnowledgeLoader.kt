@@ -3,26 +3,43 @@ package loaders
 import loaders.base.Ast
 import loaders.base.AstNode
 import loaders.base.DataLoader
+import physics.Args
+import physics.PhysicalValuesMapper
 import physics.components.Component
 import physics.components.ComponentClass
-import physics.computation.PhysicalKnowledge
-import physics.values.PhysicalValue
+import physics.computation.BasePhysicalKnowledge
 
 
 class KnowledgeLoader(
     loadedComponentClasses: Map<String, ComponentClass>,
-    requirementsPredicates: Map<String, (Component, Map<String, Component>) -> Boolean>,
-    complexKnowledgeMappers: Map<String, (Map<String, PhysicalValue<*>>) -> PhysicalValue<*>>,
-) : DataLoader<KnowledgeParser, List<PhysicalKnowledge>>(KnowledgeParser) {
-    private val formulaLoader = FormulaLoader(loadedComponentClasses, requirementsPredicates)
+    functionsRegister: FunctionsRegister,
+) : DataLoader<KnowledgeParser, List<BasePhysicalKnowledge>>(KnowledgeParser) {
+    private val formulaLoader = FormulaLoader(loadedComponentClasses, functionsRegister)
     private val databaseLoader = DatabaseLoader(loadedComponentClasses)
-    private val complexKnowledgeLoader = ComplexKnowledgeLoader(loadedComponentClasses, requirementsPredicates, complexKnowledgeMappers)
+    private val complexKnowledgeLoader = StandardKnowledgeLoader(loadedComponentClasses, functionsRegister)
 
-    override fun generateFrom(ast: Ast): List<PhysicalKnowledge> {
+    class FunctionsRegister internal constructor(): RequirementLoader.FunctionsRegister() {
+        private val requirementsPredicates = mutableMapOf<String, (Component, Args<Component>) -> Boolean>()
+        private val standardKnowledgeImplementations = mutableMapOf<String, PhysicalValuesMapper>()
+
+        fun addStandardKnowledgeImplementation(implementationRef: String, implementation: PhysicalValuesMapper) {
+            standardKnowledgeImplementations[implementationRef] = implementation
+        }
+
+        fun getComplexKnowledgeImplementation(implementationRef: String): PhysicalValuesMapper {
+            return standardKnowledgeImplementations.getValue(implementationRef)
+        }
+    }
+
+    companion object {
+        fun getFunctionsRegister() = FunctionsRegister()
+    }
+
+    override fun generateFrom(ast: Ast): List<BasePhysicalKnowledge> {
         return ast.allNodes("knowledge-#").map { generateKnowledgeFrom(it) }
     }
 
-    private fun generateKnowledgeFrom(knowledgeNode: AstNode): PhysicalKnowledge {
+    private fun generateKnowledgeFrom(knowledgeNode: AstNode): BasePhysicalKnowledge {
         return when (knowledgeNode["type"]) {
             "formula" -> formulaLoader.generateFrom(knowledgeNode.toAst())
             "database" -> databaseLoader.generateFrom(knowledgeNode.toAst())

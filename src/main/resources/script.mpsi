@@ -1,0 +1,60 @@
+import Atome
+import Solution
+import Solute
+
+expect var AList: [Solute] from "A#"
+expect var S: Solution
+expect var X: Solute
+expect var Y: Solute
+expect var xName: String
+expect var yName: String
+
+expect fun oxydoreductionImpl(x: ?String, y: String): (String, String)
+
+// ----------------------------
+
+// Creating components with and without specifying their content
+var Y = create Solution
+var X = create Atome {
+    field this = 3
+    field k = 22
+
+    group solutés {
+        + X
+    }
+}
+
+// Modifying components is done using a special syntax.
+modify S {
+    field this = 3
+
+    group solutés {
+        - X
+        + newX
+    }
+}
+
+// Some types and literals
+var myValue: [?String] = ["hello", "world", "!"]
+var myMap: {String: ?Int} = {"hi": 23, "yo": 24}
+var myBeautifulMap: {String: ?Component}
+myMap["vamos"] = 3
+
+
+// Function declaration
+fun printFirstCharXTimes(x: Int, y: String) {
+    for (i: Int in range(x)) {
+        println(y[0])
+    }
+
+    for (myComponent in A) {
+        error "List isn't empty..."
+    }
+}
+
+// While loops
+while ("yeepee" == "nope") {
+    while (false) {
+        println("VAMOS")
+    }
+}

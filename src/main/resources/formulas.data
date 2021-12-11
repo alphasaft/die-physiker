@@ -8,7 +8,8 @@ La formule implicite "Volume d'une solution = somme des volumes des solutés + v
         S.volume ('Vs')
     on a :
         Vs = Vsol + Vx + (Va#}sum
-    variables adaptables : Vs
+    variables adaptables :
+        Vs
 
 
 La formule "Masse volumique en fonction de la masse et du volume"
@@ -28,6 +29,7 @@ La base de données "Tableau périodique des éléments"
         - nom -> Element
         - numéro atomique -> AtomicNumber
         - symbole -> Symbol
+        - masse molaire -> AtomicMass
     options :
         - case_insensitive
         - normalize

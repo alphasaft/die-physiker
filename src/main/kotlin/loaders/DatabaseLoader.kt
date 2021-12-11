@@ -4,8 +4,8 @@ import loaders.base.Ast
 import loaders.base.AstNode
 import loaders.base.DataLoader
 import physics.components.ComponentClass
-import physics.computation.databases.Database
-import physics.computation.databases.DatabaseOptions
+import physics.computation.Database
+import physics.computation.DatabaseOptions
 
 class DatabaseLoader(private val loadedComponentClasses: Map<String, ComponentClass>) : DataLoader<DatabaseParser, Database>(DatabaseParser) {
     override fun generateFrom(ast: Ast): Database {

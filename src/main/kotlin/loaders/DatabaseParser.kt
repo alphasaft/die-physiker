@@ -24,37 +24,37 @@ object DatabaseParser : Parser() {
 
     private fun header() {
         consumeSentence("La base de données")
-        consumeRegex(string).trim('"')  [ "name" ]
+        string().trim('"')  [ "name" ]
     }
 
     private fun file() {
         consumeSentence("dans le fichier :")
-        consumeRegex(string).trim('"')  [ "fileName" ]
+        string().trim('"')  [ "fileName" ]
     }
 
     private fun concerns() {
         consumeSentence("concerne :")
-        consumeRegex(identifier)  [ "componentClass" ]
+        identifier()  [ "componentClass" ]
     }
 
     private fun links() {
         consumeSentence("lie : \n")
-        group("links") {
+        node("links") {
             oneOrMore("link-#", "\n") {
                 consume("-")
                 consumeRegex("[a-zA-Z0-9àéèùç ]+").trim()  [ "fieldName" ]
                 consume("->")
-                consumeRegex(identifier)  [ "column" ]
+                identifier()  [ "column" ]
             }
         }
     }
 
     private fun options() {
         consumeSentence("options : \n")
-        group("options") {
+        node("options") {
             oneOrMore("option-#", "\n") {
                 consume("-")
-                consumeRegex(identifier)  [ "optionName" ]
+                identifier()  [ "optionName" ]
             }
         }
     }

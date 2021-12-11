@@ -10,12 +10,11 @@ class ComponentGroup internal constructor(
 ) : AbstractList<Component>() {
     private val _content = content.toMutableList()
     val content: List<Component> get() = _content
-
     override val size: Int = content.size
 
     init {
         val illegalContent = content.find { !it.componentClass.inheritsOf(contentType) }
-        if (illegalContent != null) throw IllegalArgumentException("Can't pass $illegalContent (${illegalContent.name}) where ${contentType.name} is expected.")
+        if (illegalContent != null) throw IllegalArgumentException("Can't pass ${illegalContent.name} where ${contentType.name} is expected.")
     }
 
     override fun get(index: Int): Component = content[index]
@@ -36,8 +35,15 @@ class ComponentGroup internal constructor(
     override operator fun contains(element: Component): Boolean =
         content.any { element === it || element in it }
 
-    fun copy(content: List<Component> = this.content.map { it.copy() }) =
-        ComponentGroup(name, minimumSize, maximumSize, contentType, content)
+    fun addElement(element: Component) {
+        _content.add(element)
+        checkSize()
+    }
+
+    fun removeElement(element: Component) {
+        _content.removeAll { it === element }
+        checkSize()
+    }
 
     class Template(
         val name: String,

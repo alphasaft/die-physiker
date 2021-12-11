@@ -3,15 +3,19 @@ package physics.components
 import physics.values.PhysicalValue
 import physics.values.castAs
 
-class ComponentModifier(component: Component) {
-    val component = component.copy()
+class ComponentModifier(val component: Component) {
 
-    class SubcomponentGroupModifier(groupContent: List<Component>) {
-        private val groupContent = groupContent.mapTo(mutableListOf()) { it.copy() }
+    class SubcomponentGroupModifier(private val group: ComponentGroup) {
+        private val toRemove = mutableListOf<Component>()
+        private val toAdd = mutableListOf<Component>()
 
-        operator fun Component.unaryMinus() { groupContent.remove(this) }
-        operator fun Component.unaryPlus() { groupContent.add(this) }
-        fun build() = groupContent
+        operator fun Component.unaryMinus() { toRemove.add(this) }
+        operator fun Component.unaryPlus() { toAdd.add(this) }
+
+        internal fun validate() {
+            toRemove.forEach(group::removeElement)
+            toAdd.forEach(group::addElement)
+        }
     }
 
     class FieldModifier<T : PhysicalValue<*>>(private val field: Field<T>) {
@@ -20,17 +24,16 @@ class ComponentModifier(component: Component) {
         }
     }
 
-    fun modify(groupName: String, modifier: SubcomponentGroupModifier.() -> Unit) {
+    fun group(groupName: String, modifier: SubcomponentGroupModifier.() -> Unit) {
         val modifiedGroup = component.getSubcomponentGroup(groupName)
-        component.modifySubcomponentGroupContent(
-            groupName,
-            SubcomponentGroupModifier(modifiedGroup.content).apply(modifier).build()
-        )
+        SubcomponentGroupModifier(modifiedGroup).apply(modifier).validate()
     }
 
     fun field(fieldName: String): FieldModifier<*> {
         return FieldModifier(component.getField(fieldName))
     }
 
-    fun build() = component
+    override fun toString(): String {
+        return "<Modifier of $component>"
+    }
 }

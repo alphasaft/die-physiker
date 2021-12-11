@@ -3,18 +3,18 @@ package loaders
 import loaders.base.Ast
 import loaders.base.AstNode
 import loaders.base.DataLoader
-import physics.components.Component
 import physics.components.ComponentClass
-import physics.computation.ComponentRequirement
-import physics.computation.Location
-import physics.computation.formulas.Formula
-import physics.computation.formulas.FormulaOptions
-import physics.computation.formulas.expressions.*
+import physics.components.ComponentRequirement
+import physics.components.Location
+import physics.components.FlexibleRequirementsHandler
+import physics.computation.Formula
+import physics.computation.FormulaOptions
+import physics.computation.expressions.*
 
 
 class FormulaLoader(
     loadedComponentClasses: Map<String, ComponentClass>,
-    checks: Map<String, (Component, Map<String, Component>) -> Boolean> = emptyMap(),
+    functionsRegister: KnowledgeLoader.FunctionsRegister,
 ) : DataLoader<FormulaParser, Formula>(FormulaParser) {
     private companion object {
         val operatorPriorities = mapOf(
@@ -34,20 +34,20 @@ class FormulaLoader(
         )
     }
 
-    private val requirementsLoader = RequirementLoader(loadedComponentClasses, checks)
+    private val requirementsLoader = RequirementLoader(loadedComponentClasses, functionsRegister)
 
     override fun generateFrom(ast: Ast): Formula {
         val name = ast["name"]
         val implicit = ast.getOrNull("implicit") == "yes"
-        val requirements = generateRequirementsFrom(ast.."requirements").toMutableList()
+        val requirements = generateRequirementsFrom(ast.."requirements")
         val output = generateOutputFrom(ast.."output")
+        val requirementsHandler = FlexibleRequirementsHandler(requirements, output)
         val equality = generateEquality(ast.."equality", outputVariable = output.first)
         val variablesToRenderSpecifically = generateVariablesToRenderSpecificallyList(ast.getNodeOrNull("adaptableVariables"))
 
         return Formula(
             Formula.ObtentionMethod.Builtin(name),
-            requirements,
-            output,
+            requirementsHandler,
             equality,
             options = if (implicit) FormulaOptions.Implicit else 0,
             variablesToRenderSpecifically = variablesToRenderSpecifically,
@@ -64,7 +64,7 @@ class FormulaLoader(
 
     private fun generateEquality(equalityNode: AstNode, outputVariable: String): Equality {
         val left = generateExpression(equalityNode.."left")
-        val right = generateExpression(equalityNode.."left")
+        val right = generateExpression(equalityNode.."right")
         return (left equal right).isolateVariable(outputVariable)
     }
 

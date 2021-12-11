@@ -2,6 +2,7 @@ package loaders
 
 import loaders.base.Parser
 
+
 object ComponentClassesParser : Parser() {
     override fun axiom() {
         oneOrMore("component-#", separator = "\n+") {
@@ -13,28 +14,32 @@ object ComponentClassesParser : Parser() {
         header()
         optional {
             consume("\n")
-            fields()
+            all(separator = "\n") {
+                optionalBlock {
+                    fields()
+                }
+                optionalBlock {
+                    subcomponents()
+                }
+                optionalBlock {
+                    representation()
+                }
+            }
         }
-        optional {
-            consume("\n")
-            subcomponents()
-        }
-        // TODO : Add the 'representation' block
-        // TODO : Add error gestion in the 'consume' / 'consumeRegex' method
     }
 
     private fun header() {
         consumeSentence("Le composant")
         optional { consume("abstrait") ; "yes"  [ "abstract" ] }
-        consumeRegex(identifier)  [ "name" ]
+        identifier()  [ "name" ]
         optional { extendsBlock() }
     }
 
     private fun extendsBlock() {
         consume("étendant")
-        group("bases") {
+        node("bases") {
             oneOrMore("base-#", separator = ",") {
-                consumeRegex(identifier)
+                identifier()
             }
         }
     }
@@ -43,8 +48,8 @@ object ComponentClassesParser : Parser() {
         consumeSentence("possède : \n")
         oneOrMore("field-#", separator = "\n") {
             consume("-")
-            consumeRegex("(une|un|des)")
-            consumeRegex(identifier)  [ "fieldName" ]
+            consumeRegex("une|un|des")
+            words().trim()  [ "fieldName" ]
             consume("(")
             fieldType()
             consume(")")
@@ -60,7 +65,7 @@ object ComponentClassesParser : Parser() {
             option {
                 consume("Double")
                 consume(":")
-                consumeRegex(identifier)  [ "unit" ]
+                invokeAsSubParser(UnitSignatureParser, "unit")
                 type = "double"
             }
             option {
@@ -71,12 +76,12 @@ object ComponentClassesParser : Parser() {
                 consume("String")
                 optional {
                     consume("<")
-                    consumeRegex(identifier)  [ "checkFunctionRef" ]
+                    identifier()  [ "checkFunctionRef" ]
                     consume(">")
                 }
                 optional {
                     consume("->")
-                    consumeRegex(identifier)  [ "normalizerFunctionRef" ]
+                    identifier()  [ "normalizerFunctionRef" ]
                 }
                 type = "string"
             }
@@ -87,8 +92,8 @@ object ComponentClassesParser : Parser() {
     private fun notation() {
         consume("noté")
         choice {
-            option { consumeRegex(identifier)  [ "notation" ] }
-            option { consumeRegex(string).trim('"') [ "notation" ] }
+            option { identifier()  [ "notation" ] }
+            option { string().trim('"') [ "notation" ] }
         }
     }
 
@@ -96,10 +101,10 @@ object ComponentClassesParser : Parser() {
         consumeSentence("sous-composants : \n")
         oneOrMore("subcomponentGroup-#", separator = "\n") {
             consume("-")
-            group("size") { componentGroupSize() }
-            consumeRegex(identifier)  [  "subcomponentGroupName"  ]
+            node("size") { componentGroupSize() }
+            identifier()  [  "subcomponentGroupName"  ]
             consume("(")
-            consumeRegex(identifier)  [  "subcomponentGroupType"  ]
+            identifier()  [  "subcomponentGroupType"  ]
             consume(")")
         }
     }
@@ -110,26 +115,26 @@ object ComponentClassesParser : Parser() {
 
         choice {
             option {
-                val pMin = consumeRegex(integer)
+                val pMin = integer()
                 consume("-")
-                val pMax = consumeRegex(integer)
+                val pMax = integer()
                 min = pMin
                 max = pMax
             }
             option {
-                val pMax = consumeRegex(integer)
+                val pMax = integer()
                 consume("-")
                 min = "0"
                 max = pMax
             }
             option {
-                val pMin = consumeRegex(integer)
+                val pMin = integer()
                 consume("+")
                 min = pMin
                 max = "-1"
             }
             option {
-                val size = consumeRegex(integer)
+                val size = integer()
                 min = size
                 max = size
             }
@@ -137,5 +142,11 @@ object ComponentClassesParser : Parser() {
 
         min!!  [ "min" ]
         max!!  [ "max" ]
+    }
+
+    private fun representation() {
+        consumeSentence("représenté par : \n")
+        consumeRegex("son|sa|ses")
+        words().trim() [ "representationField" ]
     }
 }

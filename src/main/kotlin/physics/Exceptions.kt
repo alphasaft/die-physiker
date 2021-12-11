@@ -1,7 +1,9 @@
 package physics
 
+import physics.components.Component
+import physics.components.ComponentClass
 import physics.components.Field
-import physics.computation.PhysicalKnowledge
+import physics.computation.BasePhysicalKnowledge
 import physics.values.units.PhysicalUnit
 import physics.values.PhysicalValue
 import kotlin.reflect.KClass
@@ -12,7 +14,7 @@ open class PhysicsException(message: String): Exception(message)
 
 open class UnitException(message: String): PhysicsException(message)
 
-class UnknownUnitException(unit: PhysicalUnit) : UnitException("Unit '$unit' wasn't declared, or comports undeclared parts.")
+class UnknownUnitException(unit: PhysicalUnit) : UnitException("Unit '$unit' wasn't declared in this scope.")
 
 class AmbiguousUnitException(unit: PhysicalUnit): UnitException("Unit $unit is ambiguous.")
 
@@ -21,35 +23,39 @@ class IncompatibleUnitsException(unit1: PhysicalUnit, unit2: PhysicalUnit): Unit
 class ConversionNeededException(unit: PhysicalUnit, into: PhysicalUnit): UnitException("A conversion is needed from $unit into $into before proceeding to this operation.")
 
 
-open class KnowledgeException(message: String) : PhysicsException(message)
+class InappropriateKnowledgeException(knowledge: BasePhysicalKnowledge, toCompute: String, causedBy: String? = null): PhysicsException("Can't compute $toCompute with $knowledge and the given fields${ if (causedBy != null) " : $causedBy" else "" }")
 
-class InappropriateKnowledgeException(knowledge: PhysicalKnowledge, toCompute: String, causedBy: String? = null): KnowledgeException("Can't compute $toCompute with $knowledge and the given fields${ if (causedBy != null) " : $causedBy" else "" }")
 
-class UndeclaredComponentException(name: String): KnowledgeException("No component was declared under name '$name'.")
+open class RequirementsException(message: String) : PhysicsException(message)
 
-class NoComponentMatchingRequirementsFoundException(ownerName: String, location: String, requiredFields: Collection<String>): KnowledgeException("No component was found in $ownerName.$location that provides known values for fields : ${requiredFields.joinToString(", ")}")
+class UndeclaredComponentException(name: String): RequirementsException("No component was declared under name '$name'.")
 
-class FieldHasUnknownValueException(field: String): KnowledgeException("Value of field '$field' is unknown.")
+class NoComponentMatchingRequirementsFoundException(ownerName: String, location: String, requiredFields: Collection<String>): RequirementsException("No component was found in $ownerName.$location that provides known values for fields : ${requiredFields.joinToString(", ")}")
 
-class VariableNameCrashError(variable: String) : KnowledgeException("Got two different values for variable $variable.")
+class FieldHasUnknownValueException(field: String): RequirementsException("Value of field '$field' is unknown.")
 
-class ComponentAliasCrashError(alias: String) : KnowledgeException("Two or more components were registered under the alias $alias.")
+class VariableNameCrashError(variable: String) : RequirementsException("Got two different values for variable $variable.")
 
-internal class EndOfMultiSelection : KnowledgeException("All of the components that meet given requirements were selected")
+class ComponentAliasCrashError(alias: String) : RequirementsException("Two or more components were registered under the alias $alias.")
+
+internal class EndOfMultiSelection : RequirementsException("All of the components that meet given requirements were selected")
 
 
 open class ComponentException(message: String) : PhysicsException(message)
 
-class FieldNotFoundException(field: String, owner: String): ComponentException("$owner(...) doesn't own field $field")
+class ComponentInstantiationError(className: String, causedBy: ComponentException): ComponentException("When instantiating $className : ${causedBy::class.simpleName} : ${causedBy.message}")
 
-class ComponentGroupNotFoundException(groupName: String, owner: String): ComponentException("$owner(...) doesn't own a subcomponent group named $groupName")
+class FieldNotFoundException(field: String, owner: String): ComponentException("$owner(...) doesn't own the field '$field'")
 
-class NoRepresentationProvided(componentName: String) : ComponentException("Component $componentName doesn't possess a custom representation.")
+class ComponentGroupNotFoundException(groupName: String, owner: String): ComponentException("$owner(...) doesn't own a subcomponent group named '$groupName'")
+
+class BehaviorNotFoundException(behaviorName: String, owner: String): ComponentException("$owner(...) doesn't own a behavior named '$behaviorName'")
 
 class FieldCastException(field: Field<*>, into: KClass<out PhysicalValue<*>>): ComponentException("Field $field (type ${field.type.simpleName}) cannot be cast into ${into.simpleName}")
 
-class AbstractComponentInitializationError(className: String) : ComponentException("Can't instantiate abstract class $className")
+class AbstractComponentInstantiationError(className: String) : ComponentException("Can't instantiate abstract class $className")
 
+class MissingBehaviorImplException(message: String) : ComponentException(message)
 
 
 open class DatabaseException(message: String) : Exception(message)

@@ -57,6 +57,10 @@ internal operator fun <T, R> List<T>.times(other: List<R>): List<Pair<T, R>> {
     return result
 }
 
+internal fun <T> MutableList<T>.replace(old: T, new: T) {
+    replaceAll { if (it === old) new else it }
+}
+
 internal fun <K, V> MutableMap<K, V>.mergeWith(other: Map<K, V>, merge: (key: K, old: V, new: V) -> V) {
     for ((k, v) in other) {
         this[k] = if (containsKey(k)) merge(k, this.getValue(k), v) else v
@@ -81,6 +85,6 @@ internal fun <K, V> Map<K, V>.mergedWith(other: Map<K, V>, merge: (old: V, new: 
     return result
 }
 
-internal fun <A, B, R> ((A, B) -> R).curried(a: A): (B) -> R {
-    return { b: B -> this(a, b) }
+internal fun <K, V> List<Map<K, V>>.fuseAll(onFailure: (key: K, value1: V, value2: V) -> V): Map<K, V> {
+    return reduce { acc, map -> acc.mergedWith(map, onFailure) }
 }

@@ -1,13 +1,12 @@
 Le composant abstrait Liquide
     possède :
         - un volume (Double : L) noté V
-    représentation :
-        son volume
 
 
-Le composant Soluté
+Le composant Soluté étendant Liquide
     possède :
-        - une masse (Double : kg) noté m
+        - une masse (Double : g) noté m
+        - une masse volumique (Double : g.L-1) noté p
 
 
 Le composant Solution étendant Liquide
@@ -19,6 +18,11 @@ Le composant Solution étendant Liquide
         - 0+ solutés (Soluté)
 
 
+Le composant Solvant étendant Liquide
+    possède :
+        - une masse (Double : kg)
+
+
 
 Le composant Atome
     possède :
@@ -26,4 +30,6 @@ Le composant Atome
         - un symbole (String)
         - un numéro atomique (Int) noté Z
         - une masse molaire (Double : g.mol-1) noté "M(?)|M"
+    représenté par :
+        son symbole
 

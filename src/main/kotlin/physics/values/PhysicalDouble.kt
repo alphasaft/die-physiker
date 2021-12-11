@@ -4,6 +4,7 @@ import physics.roundAt
 import physics.IncompatibleUnitsException
 import physics.isInt
 import physics.values.units.PhysicalUnit
+import println
 import remove
 import kotlin.math.*
 
@@ -62,7 +63,10 @@ class PhysicalDouble internal constructor(
     }
 
     override fun hashCode(): Int {
-        return value.hashCode() * 5 + significantDigitsCount.hashCode() * 7 + unit.hashCode() * 13
+        var result = exactValue.hashCode()
+        result = 31 * result + significantDigitsCount
+        result = 31 * result + unit.hashCode()
+        return result
     }
 
     private fun fromDouble(value: Double) = PhysicalValuesFactory(unit.getScope()).double(value)
@@ -125,6 +129,6 @@ class PhysicalDouble internal constructor(
 
     private infix fun roughlyEquals(other: PhysicalDouble): Boolean {
         if (this == other) return true
-        return (this - other).let { it / other + it / this } < 0.0001
+        return abs((this - other).let { it / other + it / this }.toDouble()) < 0.0001
     }
 }

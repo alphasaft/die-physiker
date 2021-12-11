@@ -1,0 +1,35 @@
+La reaction "Oxydoreduction"
+    a lieu pour :
+        ... [requirements]
+    implementation : {
+
+        // --- Imports ---
+
+        import Atome
+
+        expect components A#
+        expect component S
+        expect component X
+        expect component Y
+        expect var xName: String
+        expect var yName: String
+
+        expect function oxydoreductionImpl(x: String, y: String): (String, String)
+
+        // --- Impl ---
+
+        var (newXName: String, newYName: String) = oxydoreductionImpl(xName, yName)
+        create newX : Atome { fields { name = newXName } }
+        create newY : Atome { fields { name = newYName } }
+
+        modify S {
+            group solutés {
+                remove X
+                remove Y
+                add newX
+                add newY
+            }
+        }
+
+        return S
+    }

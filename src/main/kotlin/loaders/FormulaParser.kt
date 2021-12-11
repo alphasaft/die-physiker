@@ -21,12 +21,12 @@ object FormulaParser : Parser() {
     private fun header() {
         consumeSentence("La formule")
         optional { consume("implicite") ; "yes" [ "implicit" ] }
-        consumeRegex(string).trim('"')  [ "name" ]
+        string().trim('"')  [ "name" ]
     }
 
     private fun requirements() {
         consumeSentence("concerne : \n")
-        group("requirements") {
+        node("requirements") {
             oneOrMore("requirement-#", separator = "\n") {
                 consume("-")
                 invokeAsSubParser(RequirementParser)
@@ -36,10 +36,10 @@ object FormulaParser : Parser() {
 
     private fun output() {
         consumeSentence("renvoie : \n")
-        group("output") {
+        node("output") {
             consumeRegex("$identifier.[$letter ]+").trim()  [ "location" ]
             consumeSentence("( '")
-            consumeRegex(identifier)  [ "variableName" ]
+            identifier()  [ "variableName" ]
             consumeSentence("' )")
         }
     }
@@ -47,26 +47,26 @@ object FormulaParser : Parser() {
     private fun equality() {
         consumeSentence("on a : \n")
 
-        group("equality") {
-            group("left") {
+        node("equality") {
+            node("left") {
                 expression()
             }
 
             consume("=")
 
-            group("right") {
+            node("right") {
                 expression()
             }
         }
     }
 
     private fun expression() {
-        group("operand-1") { operand() }
+        node("operand-1") { operand() }
 
         var i = 2
         zeroOrMore {
-            group("operator-${i-1}") { operator() }
-            group("operand-$i") { operand() }
+            node("operator-${i-1}") { operator() }
+            node("operand-$i") { operand() }
             i++
         }
     }
@@ -84,16 +84,16 @@ object FormulaParser : Parser() {
                 type = "variable"
             }
             option {
-                consumeRegex(double)  [ "value" ]
+                double()  [ "value" ]
                 type = "double"
             }
             option {
-                consumeRegex(integer)  [ "value" ]
+                integer()  [ "value" ]
                 type = "integer"
             }
             option {
                 consume("(")
-                group("subexpression") { expression() }
+                node("subexpression") { expression() }
                 consume(")")
                 type = "expression"
             }
@@ -104,9 +104,9 @@ object FormulaParser : Parser() {
 
     private fun multiVariablesCollector() {
         consume("(")
-        group("genericExpression") { expression() }
+        node("genericExpression") { expression() }
         consume("}")
-        consumeRegex(identifier)  [ "collector" ]
+        identifier()  [ "collector" ]
     }
 
     private fun operator() {
@@ -114,9 +114,9 @@ object FormulaParser : Parser() {
     }
 
     private fun adaptableVariables() {
-        consumeSentence("variables adaptables :")
-        group("adaptableVariables") {
-            oneOrMore("adaptableVariable-#", ",") { consumeRegex(identifier) }
+        consumeSentence("variables adaptables : \n")
+        node("adaptableVariables") {
+            oneOrMore("adaptableVariable-#", ",") { identifier() }
         }
     }
 }

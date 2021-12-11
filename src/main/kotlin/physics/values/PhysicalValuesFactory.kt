@@ -7,9 +7,9 @@ import physics.noop
 import physics.values.units.NeutralUnitScope
 import physics.values.units.PhysicalUnit
 import physics.values.units.UnitScope
-import java.lang.IllegalArgumentException
 import kotlin.math.pow
 import kotlin.reflect.KClass
+
 
 open class PhysicalValuesFactory protected constructor(private val unitScope: UnitScope) {
     companion object Constructor {
@@ -22,8 +22,13 @@ open class PhysicalValuesFactory protected constructor(private val unitScope: Un
 
     private inner class PhysicalIntFactory : PhysicalValue.Factory<PhysicalInt> {
         override val of: KClass<PhysicalInt> = PhysicalInt::class
+
         override fun fromString(value: String): PhysicalInt {
             return PhysicalInt(value.toInt(), unitScope)
+        }
+
+        override fun coerceValue(value: PhysicalInt): PhysicalInt {
+            return value
         }
     }
 
@@ -72,6 +77,10 @@ open class PhysicalValuesFactory protected constructor(private val unitScope: Un
         override fun fromString(value: String): PhysicalDouble {
             return double(value).convertInto(standardUnit)
         }
+
+        override fun coerceValue(value: PhysicalDouble): PhysicalDouble {
+            return value.convertInto(standardUnit)
+        }
     }
 
 
@@ -86,11 +95,40 @@ open class PhysicalValuesFactory protected constructor(private val unitScope: Un
         val normalizer: Mapper<String>,
         val check: Predicate<String>,
     ) : PhysicalValue.Factory<PhysicalString> {
-
         override val of: KClass<PhysicalString> = PhysicalString::class
+
         override fun fromString(value: String): PhysicalString {
+            return string(coerceValueAsPureString(value))
+        }
+
+        private fun coerceValueAsPureString(value: String): String {
             if (!check(value)) throw IllegalArgumentException("String '$value' doesn't satisfy the constraints posed on this PhysicalString.")
-            return string(normalizer(value))
+            return normalizer(value)
+        }
+
+        override fun coerceValue(value: PhysicalString): PhysicalString {
+            val asPureString = value.value
+            return string(coerceValueAsPureString(asPureString))
+        }
+    }
+
+    fun boolean(value: Boolean) = PhysicalBoolean(value, unitScope)
+
+    fun booleanFactory(): PhysicalValue.Factory<PhysicalBoolean> = BooleanFactory()
+
+    private inner class BooleanFactory : PhysicalValue.Factory<PhysicalBoolean> {
+        override val of: KClass<PhysicalBoolean> = PhysicalBoolean::class
+
+        override fun coerceValue(value: PhysicalBoolean): PhysicalBoolean {
+            return value
+        }
+
+        override fun fromString(value: String): PhysicalBoolean {
+            return when (value) {
+                "true" -> boolean(true)
+                "false" -> boolean(false)
+                else -> throw IllegalArgumentException("Expected boolean, got $value")
+            }
         }
     }
 }

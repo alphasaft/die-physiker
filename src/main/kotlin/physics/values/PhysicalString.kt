@@ -21,4 +21,12 @@ open class PhysicalString(
     override fun toString(): String {
         return value
     }
+
+    override fun equals(other: Any?): Boolean {
+        return other is PhysicalString && other.value == value
+    }
+
+    override fun hashCode(): Int {
+        return value.hashCode()
+    }
 }

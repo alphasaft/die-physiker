@@ -6,7 +6,7 @@ object RequirementParser : Parser() {
     override fun axiom() {
         consumeRegex("[\\w#]+")  [ "alias" ]
         consumeRegex("(une|un|des)")
-        consumeRegex(identifier)  [ "type" ]
+        identifier()  [ "type" ]
         optional { consume("-s") }
 
         optional {
@@ -16,12 +16,12 @@ object RequirementParser : Parser() {
 
         optional {
             consume("respectant")
-            consumeRegex(identifier)  [ "checkFunctionRef" ]
+            identifier()  [ "checkFunctionRef" ]
         }
 
         optional {
             consume(",")
-            group("variables") { variables() }
+            node("variables") { variables() }
         }
     }
 

@@ -11,8 +11,14 @@ enum class FieldComputationMethod {
     LAZY,
 }
 
+enum class CheckCoherenceOfFields {
+    YES,
+    NO
+}
+
 
 object Settings {
     var scientificNotationDisplayStyle: ScientificNotationDisplayStyle = ScientificNotationDisplayStyle.POWER_OF_TEN
     var fieldComputationMethod: FieldComputationMethod = FieldComputationMethod.ACCURATE
+    var checkCoherenceOfFields: CheckCoherenceOfFields = CheckCoherenceOfFields.NO
 }

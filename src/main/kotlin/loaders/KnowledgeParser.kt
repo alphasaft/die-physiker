@@ -17,7 +17,7 @@ object KnowledgeParser : Parser() {
                     knowledgeType = "database"
                 }
                 option {
-                    invokeAsSubParser(ComplexKnowledgeParser)
+                    invokeAsSubParser(StandardKnowledgeParser)
                     knowledgeType = "complexKnowledge"
                 }
             }

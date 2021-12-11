@@ -13,5 +13,6 @@ sealed interface PhysicalValue<V : Any> {
     sealed interface Factory<T : PhysicalValue<*>> {
         val of: KClass<T>
         fun fromString(value: String): T
+        fun coerceValue(value: T): T
     }
 }

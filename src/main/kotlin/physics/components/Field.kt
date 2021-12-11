@@ -1,21 +1,22 @@
 package physics.components
 
 import physics.FieldHasUnknownValueException
-import physics.computation.PhysicalKnowledge
+import physics.computation.BasePhysicalKnowledge
 import physics.values.PhysicalValue
 
 
 class Field<T : PhysicalValue<*>> private constructor(
     val name: String,
-    private val adaptableNotation: String?,
-    private val defaultNotation: String,
+    private val notations: Pair<String, String?>,
     val factory: PhysicalValue.Factory<T>,
     initialContent: T? = null
 ) {
 
     private var _content: T? = initialContent
-    private var _obtainedBy: PhysicalKnowledge? = null ; val obtainedBy get() = _obtainedBy
-    private var _obtentionMethodSpecificRepresentation: String? = null ; val obtentionMethodSpecificRepresentation get() = _obtentionMethodSpecificRepresentation
+    private var _obtainedBy: BasePhysicalKnowledge? = null ; val obtainedBy get() = _obtainedBy
+    private var _obtentionMethodSpecificRepresentation: String? = null ; private val obtentionMethodSpecificRepresentation get() = _obtentionMethodSpecificRepresentation
+    private val defaultNotation: String = notations.first
+    private val adaptableNotation: String? = notations.second
     val type get() = factory.of
 
     fun isKnown() = _content != null
@@ -23,8 +24,8 @@ class Field<T : PhysicalValue<*>> private constructor(
     fun getContentOrNull() = _content
     fun getContent() = _content ?: throw FieldHasUnknownValueException(this.name)
 
-    fun setContent(value: T, obtentionMethod: PhysicalKnowledge?, obtentionMethodRepresentation: String?) {
-        _content = value
+    fun setContent(value: T, obtentionMethod: BasePhysicalKnowledge?, obtentionMethodRepresentation: String?) {
+        _content = factory.coerceValue(value)
         _obtainedBy = obtentionMethod
         _obtentionMethodSpecificRepresentation = obtentionMethodRepresentation
     }
@@ -39,7 +40,7 @@ class Field<T : PhysicalValue<*>> private constructor(
 
     fun getNotationFor(owner: Component): String {
         val ownerCustomRepresentation = owner.toStringCustom()
-        return if (ownerCustomRepresentation == null || adaptableNotation == null) defaultNotation
+        return if (adaptableNotation == null || ownerCustomRepresentation == null) defaultNotation
         else adaptableNotation.replace("?", ownerCustomRepresentation)
     }
 
@@ -63,8 +64,6 @@ class Field<T : PhysicalValue<*>> private constructor(
         return result
     }
 
-    fun copy() = Field(name, adaptableNotation, defaultNotation, factory, getContentOrNull())
-
     class Template<T : PhysicalValue<*>>(
         val name: String,
         notation: String,
@@ -83,12 +82,12 @@ class Field<T : PhysicalValue<*>> private constructor(
         private val defaultNotation = notation.split("|").last().trim()
 
         fun newField(assignment: String?): Field<*> {
-            if (assignment == null) return Field(name, adaptableNotation, defaultNotation, factory)
+            if (assignment == null) return Field(name, Pair(defaultNotation, adaptableNotation), factory)
 
             val (chosenNotation, value) = extractNotationAndValueFrom(assignment)
             val computedValue = factory.fromString(value)
-            return if (chosenNotation == null) Field(name, adaptableNotation, defaultNotation, factory, computedValue)
-            else Field(name, null, chosenNotation, factory, computedValue)
+            return if (chosenNotation == null) Field(name, Pair(defaultNotation, adaptableNotation), factory, computedValue)
+            else Field(name, Pair(chosenNotation, null), factory, computedValue)
         }
 
         private fun extractNotationAndValueFrom(statement: String): Pair<String?, String> {

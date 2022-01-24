@@ -1,0 +1,17 @@
+class Atome {
+    fields {
+        nom : String<lettersAndDigitsOnly>(trim)
+        symbole : String<lettersOnly>()
+        numéro atomique [Z or renderAtomicNumber(...)] : Double<sPositive>("kg")
+    }
+
+    groups {
+        solutés : [Solute]
+        solvant : [Solvant] (size == 1)
+    }
+
+    behaviors {
+        dynamic "myDynamicBehavior"
+        static "myDynamicBehavior" myAction
+    }
+}

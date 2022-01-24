@@ -6,7 +6,7 @@ object StandardKnowledgeParser : Parser() {
     override fun axiom() {
         header()
         consume("\n")
-        requirements()
+        specs()
         consume("\n")
         output()
         consume("\n")
@@ -18,10 +18,10 @@ object StandardKnowledgeParser : Parser() {
         string()["name"]
     }
 
-    private fun requirements() {
+    private fun specs() {
         consumeSentence("concerne : \n")
-        node("requirements") {
-            oneOrMore("requirement-#", separator = "\n") {
+        node("specs") {
+            oneOrMore("spec-#", separator = "\n") {
                 consume("-")
                 invokeAsSubParser(RequirementParser)
             }

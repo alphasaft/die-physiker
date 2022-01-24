@@ -4,8 +4,8 @@ import loaders.base.Ast
 import loaders.base.AstNode
 import loaders.base.DataLoader
 import physics.components.ComponentClass
-import physics.computation.Database
-import physics.computation.DatabaseOptions
+import physics.knowledge.Database
+
 
 class DatabaseLoader(private val loadedComponentClasses: Map<String, ComponentClass>) : DataLoader<DatabaseParser, Database>(DatabaseParser) {
     override fun generateFrom(ast: Ast): Database {
@@ -40,8 +40,8 @@ class DatabaseLoader(private val loadedComponentClasses: Map<String, ComponentCl
 
     private fun generateOptionFrom(optionNode: AstNode): Int {
         return when (optionNode["optionName"]) {
-            "case_insensitive" -> DatabaseOptions.CASE_INSENSITIVE
-            "normalize" -> DatabaseOptions.NORMALIZE
+            "case_insensitive" -> Database.Flags.CASE_INSENSITIVE
+            "normalize" -> Database.Flags.NORMALIZE
             else -> throw NoSuchElementException("Option ${optionNode["optionName"]} doesn't exist")
         }
     }

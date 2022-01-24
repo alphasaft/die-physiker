@@ -6,7 +6,7 @@ object ActionsParser : Parser() {
     override fun axiom() {
         header()
         consume("\n")
-        requirements()
+        specs()
         consume("\n")
         modifyingBlock()
     }
@@ -16,10 +16,10 @@ object ActionsParser : Parser() {
         string().trim('"')  [ "reactionName" ]
     }
 
-    private fun requirements() {
+    private fun specs() {
         consumeSentence("a lieu pour : \n")
-        node("requirements") {
-            oneOrMore("requirement-#", "\n") {
+        node("specs") {
+            oneOrMore("spec-#", "\n") {
                 consume("-")
                 invokeAsSubParser(RequirementParser)
             }

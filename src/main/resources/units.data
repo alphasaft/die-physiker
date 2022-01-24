@@ -1,12 +1,12 @@
-Le temps s'exprime en s / min (60s) / h (60min) / j (24h) / ans (365.25j)
+temps -> s / min (60s) / h (60min) / j (24h) / ans (365.25j)
 
-La masse s'exprime en kg / g (0.001kg) / mg (0.001g) / t (1000kg)
+masse -> kg / g (0.001kg) / mg (0.001g) / t (1000kg)
 
-La distance s'exprime en m / dm (0.1m) / cm (0.01m) / mm (0.001m) / µm (0.001mm) / nm (0.001µm) / km (1000m)
+distance -> m / dm (0.1m) / cm (0.01m) / mm (0.001m) / µm (0.001mm) / nm (0.001µm) / km (1000m)
 
-Le volume s'exprime en L (<=> dm3) / dL (0.1L) / cL (0.01L) / mL (0.001L)
+volume -> L (<=> dm3) / dL (0.1L) / cL (0.01L) / mL (0.001L)
 
-Les forces s'expriment en N (<=> kg.m.s-2) / kN (1000N) / MN (1000kN)
+force -> N (<=> kg.m.s-2) / kN (1000N) / MN (1000kN)
 
-La "quantité de matière" s'exprime en mol / mmol (0.001mol)
+quantité de matière -> mol / mmol (0.001mol)
 

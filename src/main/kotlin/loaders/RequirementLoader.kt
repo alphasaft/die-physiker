@@ -1,33 +1,33 @@
 package loaders
 
+import alwaysTrue
 import loaders.base.Ast
 import loaders.base.AstNode
 import loaders.base.BaseFunctionsRegister
 import loaders.base.DataLoader
-import physics.alwaysTrue
 import physics.components.Component
 import physics.components.ComponentClass
-import physics.components.ComponentRequirement
+import physics.components.ComponentSpec
 import physics.components.Location
 
 
 class RequirementLoader(
     private val loadedComponentClasses: Map<String, ComponentClass>,
     private val functionRegister: FunctionsRegister,
-) : DataLoader<RequirementParser, ComponentRequirement>(RequirementParser) {
+) : DataLoader<RequirementParser, ComponentSpec>(RequirementParser) {
     open class FunctionsRegister : BaseFunctionsRegister {
-        private val requirementPredicates = mutableMapOf<String, (Component, Map<String, Component>) -> Boolean>()
+        private val specPredicates = mutableMapOf<String, (Component, Map<String, Component>) -> Boolean>()
 
         fun addRequirementPredicate(predicateRef: String, predicateImpl: (Component, Map<String, Component>) -> Boolean) {
-            requirementPredicates[predicateRef] = predicateImpl
+            specPredicates[predicateRef] = predicateImpl
         }
 
         fun getRequirementPredicate(predicateRef: String): (Component, Map<String, Component>) -> Boolean {
-            return requirementPredicates.getValue(predicateRef)
+            return specPredicates.getValue(predicateRef)
         }
     }
 
-    override fun generateFrom(ast: Ast): ComponentRequirement {
+    override fun generateFrom(ast: Ast): ComponentSpec {
         val alias = ast["alias"]
         val selectAll = "#" in alias
         val type = loadedComponentClasses.getValue(ast["type"])
@@ -35,8 +35,8 @@ class RequirementLoader(
         val predicate = ast.getOrNull("checkFunctionRef")?.let { functionRegister.getRequirementPredicate(it) } ?: ::alwaysTrue
         val variables = generateVariablesFrom(ast.getNodeOrNull("variables") ?: AstNode())
 
-        return if (selectAll) ComponentRequirement.allRemaining(alias, type, location, variables, predicate)
-        else ComponentRequirement.single(alias, type, location, variables, predicate)
+        return if (selectAll) ComponentSpec.allRemaining(alias, type, location, variables, predicate)
+        else ComponentSpec.single(alias, type, location, variables, predicate)
     }
 
     private fun generateVariablesFrom(variablesNode: AstNode): Map<String, String> {

@@ -1,15 +1,12 @@
 La formule implicite "Volume d'une solution = somme des volumes des solutés + volume du solvant"
     concerne :
         - S une Solution
-        - X un Soluté de S.solutés, avec Vx son volume
         - A# des Soluté-s de S.solutés, avec Va# leurs volume-s
         - Sol un Solvant de S.solvant, avec Vsol son volume
     renvoie :
         S.volume ('Vs')
     on a :
-        Vs = Vsol + Vx + (Va#}sum
-    variables adaptables :
-        Vs
+        Vs = Vsol + (Va#}sum
 
 
 La formule "Masse volumique en fonction de la masse et du volume"

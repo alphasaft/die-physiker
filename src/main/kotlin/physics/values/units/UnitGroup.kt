@@ -3,13 +3,9 @@ package physics.values.units
 import Couple
 import println
 
-sealed class UnitGroup(private val measuredQuantity: String, private val mainUnit: String) {
-    internal val units = mutableMapOf(mainUnit to 1.0)
+sealed class UnitGroup(private val measuredQuantity: String, private val mainUnit: String, secondaryUnits: Map<String, Double>) {
+    internal val units = mapOf(mainUnit to 1.0) + secondaryUnits
     private val converters = mutableMapOf<Couple<String>, Double>()
-
-    fun addUnit(unit: String, convertingCoefficient: Double) {
-        units[unit] = convertingCoefficient
-    }
 
     fun convert(unit: String, target: String, value: Double): Double? {
         val coefficient = getConvertingCoefficientImpl(unit, target) ?: return null

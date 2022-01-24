@@ -4,12 +4,11 @@ import loaders.base.Ast
 import loaders.base.AstNode
 import loaders.base.DataLoader
 import physics.components.ComponentClass
-import physics.components.ComponentRequirement
+import physics.components.ComponentSpec
 import physics.components.Location
-import physics.components.FlexibleRequirementsHandler
-import physics.computation.Formula
-import physics.computation.FormulaOptions
-import physics.computation.expressions.*
+import physics.components.ComponentsPickerWithOutput
+import physics.knowledge.Formula
+import physics.values.equalities.*
 
 
 class FormulaLoader(
@@ -34,28 +33,25 @@ class FormulaLoader(
         )
     }
 
-    private val requirementsLoader = RequirementLoader(loadedComponentClasses, functionsRegister)
+    private val specsLoader = RequirementLoader(loadedComponentClasses, functionsRegister)
 
     override fun generateFrom(ast: Ast): Formula {
         val name = ast["name"]
         val implicit = ast.getOrNull("implicit") == "yes"
-        val requirements = generateRequirementsFrom(ast.."requirements")
+        val specs = generateSpecsFrom(ast.."specs")
         val output = generateOutputFrom(ast.."output")
-        val requirementsHandler = FlexibleRequirementsHandler(requirements, output)
+        val specsHandler = ComponentsPickerWithOutput(specs, output)
         val equality = generateEquality(ast.."equality", outputVariable = output.first)
-        val variablesToRenderSpecifically = generateVariablesToRenderSpecificallyList(ast.getNodeOrNull("adaptableVariables"))
 
         return Formula(
-            Formula.ObtentionMethod.Builtin(name),
-            requirementsHandler,
+            name,
+            specsHandler,
             equality,
-            options = if (implicit) FormulaOptions.Implicit else 0,
-            variablesToRenderSpecifically = variablesToRenderSpecifically,
         )
     }
 
-    private fun generateRequirementsFrom(requirementsNode: AstNode): List<ComponentRequirement> {
-        return requirementsNode.allNodes("requirement-#").map { requirementsLoader.generateFrom(it.toAst()) }
+    private fun generateSpecsFrom(specsNode: AstNode): List<ComponentSpec> {
+        return specsNode.allNodes("spec-#").map { specsLoader.generateFrom(it.toAst()) }
     }
 
     private fun generateOutputFrom(outputNode: AstNode): Pair<String, Location.At> {
@@ -107,12 +103,5 @@ class FormulaLoader(
             "multiVariablesCollector" -> All(generateExpression(operandNode.."genericExpression"), operandNode["collector"])
             else -> throw NoWhenBranchMatchedException()
         }
-    }
-
-    private fun generateVariablesToRenderSpecificallyList(formulaNode: AstNode?): List<String> {
-        return formulaNode
-            ?.allNodes("adaptableVariable-#")
-            ?.map { it.content!! }
-            ?: emptyList()
     }
 }

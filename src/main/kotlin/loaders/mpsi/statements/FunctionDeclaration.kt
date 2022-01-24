@@ -8,7 +8,7 @@ internal class FunctionDeclaration(
     private val body: List<Statement>,
 ) : Statement {
     override fun toString(): String {
-        return "function $functionName$signature {\n" +
+        return "fun $functionName$signature {\n" +
                "    ${body.joinToString("\n").replace("\n", "\n\t")}" +
                "\n}"
     }

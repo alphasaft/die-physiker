@@ -1,7 +1,7 @@
 La reaction "Oxydoreduction"
     a lieu pour :
-        ... [requirements]
-    implementation : {
+        ... [specs]
+    implementation : do {
 
         // --- Imports ---
 

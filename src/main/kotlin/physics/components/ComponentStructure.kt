@@ -1,17 +1,19 @@
 package physics.components
 
-import physics.dynamic.Behavior
-
 
 class ComponentStructure(
     extends: List<ComponentClass> = emptyList(),
+    init: Component.() -> Unit = {},
     fieldsTemplates: List<Field.Template<*>> = emptyList(),
-    subcomponentsGroupsTemplates: List<ComponentGroup.Template> = emptyList(),
-    behaviorsTemplates: List<Behavior.Template> = emptyList(),
+    subcomponentsGroupsTemplates: List<Group.Template> = emptyList(),
 ) {
-    val bases: List<ComponentClass> = extends + extends.map { it.structure.bases }.flatten()
+    private val directBases: List<ComponentClass> = extends
+    val bases: List<ComponentClass> = directBases + directBases.map { it.structure.bases }.flatten()
+
+    val init: Component.() -> Unit = { directBases.forEach { it.structure.init(this) } ; init(this) }
+
     val fieldsTemplates: List<Field.Template<*>> = fieldsTemplates + bases.map { it.structure.fieldsTemplates }.flatten()
     val fieldsNames: List<String> = fieldsTemplates.map { it.name }
-    val subcomponentsGroupsTemplates: List<ComponentGroup.Template> = subcomponentsGroupsTemplates + bases.map { it.structure.subcomponentsGroupsTemplates }.flatten()
-    val behaviorsTemplates: List<Behavior.Template> = behaviorsTemplates + bases.map { it.structure.behaviorsTemplates }.flatten()
+
+    val subcomponentsGroupsTemplates: List<Group.Template> = subcomponentsGroupsTemplates + bases.map { it.structure.subcomponentsGroupsTemplates }.flatten()
 }

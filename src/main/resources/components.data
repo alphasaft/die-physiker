@@ -29,7 +29,7 @@ Le composant Atome
         - un nom (String)
         - un symbole (String)
         - un numéro atomique (Int) noté Z
-        - une masse molaire (Double : g.mol-1) noté "M(?)|M"
+        - une masse molaire (Double : g.mol-1) notée M
     représenté par :
         son symbole
 

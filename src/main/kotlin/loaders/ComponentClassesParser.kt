@@ -75,11 +75,6 @@ object ComponentClassesParser : Parser() {
             option {
                 consume("String")
                 optional {
-                    consume("<")
-                    identifier()  [ "checkFunctionRef" ]
-                    consume(">")
-                }
-                optional {
                     consume("->")
                     identifier()  [ "normalizerFunctionRef" ]
                 }
@@ -90,7 +85,7 @@ object ComponentClassesParser : Parser() {
     }
 
     private fun notation() {
-        consume("noté")
+        consumeRegex("noté(e)?")
         choice {
             option { identifier()  [ "notation" ] }
             option { string().trim('"') [ "notation" ] }

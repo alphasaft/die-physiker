@@ -1,99 +1,122 @@
 package physics.components
 
-import physics.FieldHasUnknownValueException
-import physics.computation.BasePhysicalKnowledge
-import physics.values.PhysicalValue
+import noop
+import physics.quantities.AnyQuantity
+import physics.quantities.ImpossibleQuantity
+import physics.quantities.PValue
+import physics.quantities.Quantity
+import kotlin.reflect.KClass
 
 
-class Field<T : PhysicalValue<*>> private constructor(
+class Field<T : PValue<T>> private constructor(
     val name: String,
-    private val notations: Pair<String, String?>,
-    val factory: PhysicalValue.Factory<T>,
-    initialContent: T? = null
+    val type: KClass<T>,
+    private val notation: Notation,
+    private var content: Quantity<T>,
+    private val contentNormalizer: (Quantity<T>) -> Quantity<T>,
 ) {
-
-    private var _content: T? = initialContent
-    private var _obtainedBy: BasePhysicalKnowledge? = null ; val obtainedBy get() = _obtainedBy
-    private var _obtentionMethodSpecificRepresentation: String? = null ; private val obtentionMethodSpecificRepresentation get() = _obtentionMethodSpecificRepresentation
-    private val defaultNotation: String = notations.first
-    private val adaptableNotation: String? = notations.second
-    val type get() = factory.of
-
-    fun isKnown() = _content != null
-
-    fun getContentOrNull() = _content
-    fun getContent() = _content ?: throw FieldHasUnknownValueException(this.name)
-
-    fun setContent(value: T, obtentionMethod: BasePhysicalKnowledge?, obtentionMethodRepresentation: String?) {
-        _content = factory.coerceValue(value)
-        _obtainedBy = obtentionMethod
-        _obtentionMethodSpecificRepresentation = obtentionMethodRepresentation
+    @Suppress("unused")
+    sealed class Notation(val default: String, val custom: (String) -> String) {
+        class Always(notation: String) : Notation(notation, { notation })
+        class UseNoEmbedding(notation: String) : Notation(notation, { "$notation$it" })
+        class UseParenthesis(notation: String) : Notation(notation, { "$notation($it)" })
+        class UseBrackets(notation: String) : Notation(notation, { "$notation[$it]" })
+        class UseLtAndGt(notation: String) : Notation(notation, { "$notation<$it>" })
+        class UseUnderscore(notation: String) : Notation(notation, { "${notation}_$it" })
+        class Custom(default: String, custom: (String) -> String) : Notation(default, custom)
     }
 
-    override fun toString(): String {
-        return toStringUsingNotation(defaultNotation)
+    lateinit var owner: Component
+
+    fun getContent() = content
+
+    fun setContent(content: Quantity<*>) {
+        require(type == content.type) { "Expected quantity of type ${type.simpleName}, got ${content.type.simpleName}." }
+
+        val newContent = this.content intersect contentNormalizer(@Suppress("UNCHECKED_CAST") (content as Quantity<T>))
+        require(newContent !is ImpossibleQuantity<*>) { "Can't set field's content to $content, since it isn't compatible with the current content." }
+
+        this.content = newContent
     }
 
-    fun toString(owner: Component): String {
-        return toStringUsingNotation(getNotationFor(owner))
-    }
+    fun getNotation() =
+        if (owner.isCustomRepresentationAvailable()) notation.custom(owner.toString())
+        else notation.default
 
-    fun getNotationFor(owner: Component): String {
-        val ownerCustomRepresentation = owner.toStringCustom()
-        return if (adaptableNotation == null || ownerCustomRepresentation == null) defaultNotation
-        else adaptableNotation.replace("?", ownerCustomRepresentation)
-    }
+    private fun toStringUsingNotation(notation: String): String =
+        if (content is AnyQuantity<*>) "$notation (inconnu(e))" else "$notation : $content"
 
-    private fun toStringUsingNotation(notation: String): String {
-        return when {
-            _content == null -> "$notation (inconnu(e))"
-            _obtentionMethodSpecificRepresentation == null -> "$notation = $_content"
-            else -> "$notation = $_content (obtenu(e) par $obtentionMethodSpecificRepresentation)"
-        }
-    }
+    override fun toString(): String =
+        toStringUsingNotation(getNotation())
 
     override fun equals(other: Any?): Boolean {
-        return other is Field<*> && other.type == type && other._content == _content && other.name == name
+        return other is Field<*> && other.type == type && other.content == content && other.name == name
     }
 
     override fun hashCode(): Int {
         var result = name.hashCode()
         result = 31 * result + type.hashCode()
-        result = 31 * result + (_content?.hashCode() ?: 0)
-        result = 31 * result + (_obtainedBy?.hashCode() ?: 0)
+        result = 31 * result + content.hashCode()
         return result
     }
 
-    class Template<T : PhysicalValue<*>>(
+    class Template<T : PValue<T>>(
+        val type: KClass<T>,
         val name: String,
-        notation: String,
-        private val factory: PhysicalValue.Factory<T>,
+        private val notation: Notation,
+        private val initialQuantity: Quantity<T>,
+        private val normalizer: (Quantity<T>) -> Quantity<T>
     ) {
-        constructor(
-            name: String,
-            factory: PhysicalValue.Factory<T>
-        ): this(name, name, factory)
+        companion object Factory {
+            inline operator fun <reified T : PValue<T>> invoke(
+                name: String,
+                notation: Notation,
+                initialQuantity: Quantity<T>,
+                noinline normalizer: (Quantity<T>) -> Quantity<T>
+            ) = Template(
+                T::class,
+                name,
+                notation,
+                initialQuantity,
+                normalizer
+            )
 
-        init {
-            if (notation.count { it == '|' } > 1) throw IllegalArgumentException("Expected at most one '|' in the notation")
+            inline operator fun <reified T : PValue<T>> invoke(
+                name: String,
+                notation: String,
+                initialQuantity: Quantity<T>,
+                noinline normalizer: (Quantity<T>) -> Quantity<T>
+            ) = this(
+                name,
+                Notation.UseParenthesis(notation),
+                initialQuantity,
+                normalizer
+            )
+
+            inline operator fun <reified T : PValue<T>> invoke(
+                name: String,
+                notation: String,
+                initialQuantity: Quantity<T>,
+            ) = this(
+                name,
+                notation,
+                initialQuantity,
+                ::noop
+            )
+
+            inline operator fun <reified T : PValue<T>> invoke(
+                name: String,
+                notation: String,
+            ) = this(
+                name,
+                notation,
+                AnyQuantity<T>(),
+                ::noop
+            )
         }
 
-        private val adaptableNotation = if ("|" in notation) notation.split("|").first().trim() else null
-        private val defaultNotation = notation.split("|").last().trim()
-
-        fun newField(assignment: String?): Field<*> {
-            if (assignment == null) return Field(name, Pair(defaultNotation, adaptableNotation), factory)
-
-            val (chosenNotation, value) = extractNotationAndValueFrom(assignment)
-            val computedValue = factory.fromString(value)
-            return if (chosenNotation == null) Field(name, Pair(defaultNotation, adaptableNotation), factory, computedValue)
-            else Field(name, Pair(chosenNotation, null), factory, computedValue)
-        }
-
-        private fun extractNotationAndValueFrom(statement: String): Pair<String?, String> {
-            if ("=" !in statement) return null to statement
-            val (notation, value) = statement.split("=").map { it.trim() }
-            return notation to value
+        internal fun newField(quantity: Quantity<*> = AnyQuantity(type)): Field<T> {
+            return Field(name, type, notation, initialQuantity, normalizer).apply { setContent(quantity) }
         }
     }
 }

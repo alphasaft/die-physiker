@@ -1,6 +1,6 @@
 package loaders.mpsi
 
-import physics.values.PhysicalValue
+import physics.quantities.PValue
 import kotlin.reflect.KClass
 
 
@@ -23,7 +23,7 @@ internal sealed class MpsiType {
         }
     }
 
-    class Builtin(val builtinType: KClass<out PhysicalValue<*>>) : MpsiType() {
+    class Builtin(val builtinType: KClass<out PValue<*>>) : MpsiType() {
         override val members = emptyList<MpsiType>()
 
         override fun equals(other: Any?): Boolean {

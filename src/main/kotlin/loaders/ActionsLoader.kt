@@ -3,28 +3,28 @@ package loaders
 
 import loaders.base.Ast
 import loaders.base.DataLoader
-import physics.Args
+import Args
 import physics.components.Component
 import physics.components.ComponentClass
-import physics.components.RequirementsHandler
-import physics.dynamic.Action
-import physics.values.PhysicalValue
+import physics.components.ComponentsPicker
+import physics.functions.Action
+import physics.quantities.Quantity
 
 
 class ActionsLoader(
     loadedComponentClasses: Map<String, ComponentClass>,
     private val functionsRegister: FunctionsRegister
 ) : DataLoader<ActionsParser, Action>(ActionsParser) {
-    private val requirementLoader = RequirementLoader(loadedComponentClasses, functionsRegister)
+    private val specLoader = RequirementLoader(loadedComponentClasses, functionsRegister)
 
     class FunctionsRegister internal constructor() : RequirementLoader.FunctionsRegister() {
-        private val actionImplementations = mutableMapOf<String, (Args<Component>, Args<PhysicalValue<*>>) -> Unit>()
+        private val actionImplementations = mutableMapOf<String, (Args<Component>, Args<Quantity<*>>) -> Unit>()
 
-        fun addComponentModifier(actionRef: String, actionImpl: (Args<Component>, Args<PhysicalValue<*>>) -> Unit) {
+        fun addComponentModifier(actionRef: String, actionImpl: (Args<Component>, Args<Quantity<*>>) -> Unit) {
             actionImplementations[actionRef] = actionImpl
         }
 
-        fun getComponentModifier(actionRef: String): (Args<Component>, Args<PhysicalValue<*>>) -> Unit {
+        fun getComponentModifier(actionRef: String): (Args<Component>, Args<Quantity<*>>) -> Unit {
             return actionImplementations.getValue(actionRef)
         }
     }
@@ -35,11 +35,11 @@ class ActionsLoader(
 
     override fun generateFrom(ast: Ast): Action {
         val name = ast["reactionName"]
-        val requirements = RequirementsHandler((ast.."requirements").allNodes("requirement-#").map { requirementLoader.generateFrom(it.toAst()) })
+        val specs = ComponentsPicker((ast.."specs").allNodes("spec-#").map { specLoader.generateFrom(it.toAst()) })
         val action = functionsRegister.getComponentModifier(ast["actionFunctionRef"])
         return Action(
             name,
-            requirements,
+            specs,
             action
         )
     }

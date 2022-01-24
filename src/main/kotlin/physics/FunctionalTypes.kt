@@ -1,7 +1,7 @@
 package physics
 
+import Args
+import physics.quantities.PValue
+import physics.quantities.Quantity
 
-import physics.values.PhysicalValue
-
-typealias Args<T> = Map<String, T>
-typealias PhysicalValuesMapper = (args: Args<PhysicalValue<*>>) -> PhysicalValue<*>
+typealias QuantityMapper = (Args<Quantity<*>>) -> Quantity<*>

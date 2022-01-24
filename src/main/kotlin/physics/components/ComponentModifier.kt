@@ -1,11 +1,11 @@
 package physics.components
 
-import physics.values.PhysicalValue
-import physics.values.castAs
+import physics.quantities.PValue
+
 
 class ComponentModifier(val component: Component) {
 
-    class SubcomponentGroupModifier(private val group: ComponentGroup) {
+    class GroupModifier(private val group: Group) {
         private val toRemove = mutableListOf<Component>()
         private val toAdd = mutableListOf<Component>()
 
@@ -18,15 +18,15 @@ class ComponentModifier(val component: Component) {
         }
     }
 
-    class FieldModifier<T : PhysicalValue<*>>(private val field: Field<T>) {
-        operator fun rangeTo(value: PhysicalValue<*>) {
-            field.setContent(value.castAs(field.type), null, null)
+    class FieldModifier<T : PValue<T>>(private val field: Field<T>) {
+        operator fun rangeTo(value: T) {
+            field.setContent(value)
         }
     }
 
-    fun group(groupName: String, modifier: SubcomponentGroupModifier.() -> Unit) {
-        val modifiedGroup = component.getSubcomponentGroup(groupName)
-        SubcomponentGroupModifier(modifiedGroup).apply(modifier).validate()
+    fun group(groupName: String, modifier: GroupModifier.() -> Unit) {
+        val modifiedGroup = component.getGroup(groupName)
+        GroupModifier(modifiedGroup).apply(modifier).validate()
     }
 
     fun field(fieldName: String): FieldModifier<*> {

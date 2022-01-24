@@ -9,18 +9,21 @@ import loaders.mpsi.statements.ExternalVariableDeclaration
 import loaders.mpsi.statements.Statement
 import physics.components.ComponentClass
 import physics.values.*
+import physics.quantities.booleans.PBoolean
+import physics.quantities.doubles.PReal
+import physics.quantities.ints.PInt
+import physics.quantities.strings.PString
 
 
 class ScriptLoader(
-    private val physicalValuesFactory: PhysicalValuesFactory,
     private val componentClasses: Map<String, ComponentClass>,
 ) : DataLoader<ScriptParser, Script>(ScriptParser) {
 
     private val builtinTypes = mapOf(
-        "Boolean" to PhysicalBoolean::class,
-        "Int" to PhysicalInt::class,
-        "Double" to PhysicalDouble::class,
-        "String" to PhysicalString::class,
+        "Boolean" to PBoolean::class,
+        "Int" to PInt::class,
+        "Double" to PReal::class,
+        "String" to PString::class,
     )
 
     private val operatorsImplementations = mapOf(
@@ -329,10 +332,10 @@ class ScriptLoader(
             "list" -> generateList(literalNode)
             "tuple" -> generateTuple(literalNode)
             "map" -> generateMap(literalNode)
-            "boolean" -> MpsiBuiltinLiteral(physicalValuesFactory.boolean(nodeContent == "true"))
-            "int" -> MpsiBuiltinLiteral(physicalValuesFactory.int(nodeContent.toInt()))
-            "double" -> MpsiBuiltinLiteral(physicalValuesFactory.double(nodeContent.toDouble()))
-            "string" -> MpsiBuiltinLiteral(physicalValuesFactory.string(nodeContent.trim('\"')))
+            "boolean" -> MpsiBuiltinLiteral(PBoolean(nodeContent == "true"))
+            "int" -> MpsiBuiltinLiteral(PInt(nodeContent.toInt()))
+            "double" -> MpsiBuiltinLiteral(PReal(nodeContent.toDouble()))
+            "string" -> MpsiBuiltinLiteral(PString(nodeContent.trim('\"')))
             "null" -> Null
             else -> throw NoWhenBranchMatchedException()
         }

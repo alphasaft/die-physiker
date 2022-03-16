@@ -1,8 +1,8 @@
 package physics.knowledge
 
 
+import Collector
 import physics.InappropriateKnowledgeException
-import physics.QuantityMapper
 import physics.ComponentsPickerException
 import physics.components.Field
 import physics.components.ComponentsPickerWithOutput
@@ -15,7 +15,7 @@ import physics.quantities.castAs
 open class StandardKnowledge(
     override val name: String,
     private val specs: ComponentsPickerWithOutput,
-    private val mappers: Map<String, QuantityMapper>,
+    private val mappers: Map<String, Collector<Quantity<*>>>,
     private val representations: Map<String, String>
 ) : Knowledge {
     protected val outputVariable = specs.outputVariable

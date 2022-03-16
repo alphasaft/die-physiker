@@ -3,7 +3,6 @@ package physics.quantities.booleans
 import physics.quantities.PValue
 import physics.quantities.ints.PInt
 import physics.quantities.doubles.PReal
-import physics.quantities.doubles.PreciseDouble
 import physics.quantities.strings.PString
 import kotlin.reflect.KClass
 
@@ -25,7 +24,7 @@ class PBoolean(val value: Boolean) : PValue<PBoolean>() {
 
     override fun toPBoolean(): PBoolean = this
     override fun toPInt(): PInt = PInt(if (value) 1 else 0)
-    override fun toPReal(): PReal = PReal(PreciseDouble(if (value) 1.0 else 0.0))
+    override fun toPReal(): PReal = PReal(if (value) 1.0 else 0.0)
     override fun toPString(): PString = PString(value.toString())
 
     fun not(): PBoolean {

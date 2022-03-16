@@ -71,7 +71,7 @@ class Database(
                 }' taking the value '${
                     fieldOwner.getQuantity(chosenField)
                 }'."
-            )))).convertTo(field.type)
+            )))).useAs(field.type)
 
         return queryResult
     }

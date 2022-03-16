@@ -1,14 +1,15 @@
 package loaders
 
+import Collector
 import loaders.base.Ast
 import loaders.base.AstNode
 import loaders.base.DataLoader
-import physics.QuantityMapper
 import physics.components.ComponentClass
 import physics.components.ComponentSpec
 import physics.components.Location
 import physics.components.ComponentsPickerWithOutput
 import physics.knowledge.StandardKnowledge
+import physics.quantities.Quantity
 
 
 class StandardKnowledgeLoader(
@@ -40,7 +41,7 @@ class StandardKnowledgeLoader(
         return outputNode["variableName"] to Location.At(outputNode["location"])
     }
 
-    private fun generateUsedMappersFrom(mappersNode: AstNode): Map<String, QuantityMapper> {
+    private fun generateUsedMappersFrom(mappersNode: AstNode): Map<String, Collector<Quantity<*>>> {
         return mappersNode.allNodes("mapper-#").associate { it["variable"] to functionsRegister.getComplexKnowledgeImplementation(it["mapperFunctionRef"]) }
     }
 }

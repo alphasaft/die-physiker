@@ -16,8 +16,8 @@ abstract class PValue<T : PValue<T>> : Quantity<T> {
     abstract fun toPReal(): PReal
     abstract fun toPString(): PString
 
-    inline fun <reified V : PValue<V>> convertTo(): V = this.convertTo(V::class)
-    fun <V : PValue<V>> convertTo(kClass: KClass<V>): V {
+    inline fun <reified V : PValue<V>> useAs(): V = this.useAs(V::class)
+    fun <V : PValue<V>> useAs(kClass: KClass<V>): V {
         return (@Suppress("UNCHECKED_CAST") (when (kClass) {
             PBoolean::class -> toPBoolean()
             PInt::class -> toPInt()
@@ -27,13 +27,12 @@ abstract class PValue<T : PValue<T>> : Quantity<T> {
         } as V))
     }
 
-    override fun contains(value: T): Boolean =
-        value == that
+    override fun contains(value: T): Boolean = value == that
 
-    override fun intersect(quantity: Quantity<T>): Quantity<T> =
+    override fun stdIntersect(quantity: Quantity<T>): Quantity<T> =
         if (that in quantity) this else ImpossibleQuantity(type)
 
-    override fun union(quantity: Quantity<T>): Quantity<T> =
+    override fun stdUnion(quantity: Quantity<T>): Quantity<T> =
         if (that in quantity) quantity else QuantityUnion.assertReduced(type, this, quantity)
 
     override fun simplify(): Quantity<T> =

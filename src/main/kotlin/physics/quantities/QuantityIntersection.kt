@@ -5,7 +5,7 @@ import kotlin.reflect.KClass
 
 class QuantityIntersection<V : PValue<V>> private constructor(
     override val type: KClass<V>,
-    private val items: Set<Quantity<V>>,
+    val items: Set<Quantity<V>>,
 ) : Quantity<V> {
 
     companion object Factory {
@@ -24,11 +24,19 @@ class QuantityIntersection<V : PValue<V>> private constructor(
 
     override fun toString() = items.joinToString(" && ")
 
+    override fun equals(other: Any?): Boolean {
+        return other is QuantityIntersection<*> && items == other.items
+    }
+
+    override fun hashCode(): Int {
+        return items.hashCode()
+    }
+
     override fun contains(value: V): Boolean = items.all { value in it }
 
-    override fun intersect(quantity: Quantity<V>): Quantity<V> = new(type, items + quantity)
+    override fun stdIntersect(quantity: Quantity<V>): Quantity<V> = new(type, items + quantity)
 
-    override fun union(quantity: Quantity<V>): Quantity<V> = new(type, items.map { it union quantity })
+    override fun stdUnion(quantity: Quantity<V>): Quantity<V> = new(type, items.map { it union quantity })
 
     override fun simplify(): Quantity<V> {
         return when {
@@ -48,7 +56,7 @@ class QuantityIntersection<V : PValue<V>> private constructor(
 
         for ((i, x) in items.withIndex()) {
             for (y in items.drop(i+1)) {
-                val intersect = x intersect y
+                val intersect = x stdIntersect y
                 if (intersect !is QuantityIntersection) return new(type, items - y - x + intersect)
             }
         }

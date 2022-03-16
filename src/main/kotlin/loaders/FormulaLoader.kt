@@ -8,7 +8,7 @@ import physics.components.ComponentSpec
 import physics.components.Location
 import physics.components.ComponentsPickerWithOutput
 import physics.knowledge.Formula
-import physics.values.equalities.*
+import physics.quantities.expressions.*
 
 
 class FormulaLoader(
@@ -100,7 +100,7 @@ class FormulaLoader(
             "double" -> Const(operandNode["value"].toDouble())
             "variable" -> Var(operandNode["variableName"])
             "expression" -> generateExpression(operandNode.."subexpression")
-            "multiVariablesCollector" -> All(generateExpression(operandNode.."genericExpression"), operandNode["collector"])
+            "multiVariablesCollector" -> GenericSum(generateExpression(operandNode.."genericExpression"), operandNode["counter"], GenericExpression.Bound.Static(1), GenericExpression.Bound.Static(2))
             else -> throw NoWhenBranchMatchedException()
         }
     }

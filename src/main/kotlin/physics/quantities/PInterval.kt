@@ -18,7 +18,7 @@ abstract class PInterval<T>(
         isUpperBoundClosed: Boolean
     ): Quantity<T>
 
-    override fun intersect(quantity: Quantity<T>): Quantity<T> {
+    override fun stdIntersect(quantity: Quantity<T>): Quantity<T> {
         return when (quantity) {
             is PInterval<T> -> intersectWithInterval(quantity)
             else -> QuantityIntersection.assertReduced(type, this, quantity)
@@ -46,7 +46,7 @@ abstract class PInterval<T>(
         )
     }
 
-    override fun union(quantity: Quantity<T>): Quantity<T> {
+    override fun stdUnion(quantity: Quantity<T>): Quantity<T> {
         return when (quantity) {
             is PInterval<T> -> unionWithInterval(quantity)
             else -> QuantityUnion.assertReduced(type, this, quantity)
@@ -54,7 +54,7 @@ abstract class PInterval<T>(
     }
 
     private fun unionWithInterval(interval: PInterval<T>): Quantity<T> {
-        if (this intersect interval is ImpossibleQuantity<*>) return QuantityUnion.assertReduced(type, this, interval)
+        if (this stdIntersect interval is ImpossibleQuantity<*>) return QuantityUnion.assertReduced(type, this, interval)
 
         val (lowerInterval, upperInterval) = listOf(this, interval).sortedBy { it.lowerBound }
 
@@ -87,7 +87,7 @@ abstract class PInterval<T>(
     }
 
     fun coerceUpperBound(max: T): Quantity<T> {
-        return if (lowerBound > max) new(
+        return if (upperBound > max) new(
             isLowerBoundClosed,
             lowerBound,
             max,
@@ -117,5 +117,22 @@ abstract class PInterval<T>(
         builder.append(upperBound)
         builder.append(if (isUpperBoundClosed) "]" else "[")
         return builder.toString()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other is PInterval<*>
+                && (!isLowerBoundClosed xor other.isLowerBoundClosed)
+                && (!isUpperBoundClosed xor other.isUpperBoundClosed)
+                && (lowerBound == other.lowerBound)
+                && (upperBound == other.upperBound)
+    }
+
+    override fun hashCode(): Int {
+        var result = type.hashCode()
+        result = 31 * result + isLowerBoundClosed.hashCode()
+        result = 31 * result + lowerBound.hashCode()
+        result = 31 * result + upperBound.hashCode()
+        result = 31 * result + isUpperBoundClosed.hashCode()
+        return result
     }
 }

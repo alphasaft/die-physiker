@@ -16,12 +16,12 @@ class PSet<V : PValue<V>>(
 
     override fun contains(value: V): Boolean = ownershipPredicate(value)
 
-    override fun intersect(quantity: Quantity<V>): Quantity<V> {
+    override fun stdIntersect(quantity: Quantity<V>): Quantity<V> {
         if (quantity is PSet<V>) return PSet(type) { it in this && it in quantity }
         return AnyQuantity(type)
     }
 
-    override fun union(quantity: Quantity<V>): Quantity<V> {
+    override fun stdUnion(quantity: Quantity<V>): Quantity<V> {
         if (quantity is PSet<V>) return PSet(type) { it in this || it in quantity }
         return AnyQuantity(type)
     }
@@ -32,5 +32,13 @@ class PSet<V : PValue<V>>(
 
     override fun toString(): String {
         return "{ ... }"
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other === this
+    }
+
+    override fun hashCode(): Int {
+        return ownershipPredicate.hashCode()
     }
 }

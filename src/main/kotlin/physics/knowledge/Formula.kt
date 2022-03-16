@@ -1,14 +1,16 @@
 package physics.knowledge
 
-import physics.QuantityMapper
+import Collector
 import physics.components.*
 import physics.components.ComponentsPickerWithOutput
-import physics.values.equalities.Equality
-import physics.values.equalities.Var
-import physics.values.equalities.equal
+import physics.quantities.expressions.Equality
+import physics.quantities.expressions.Var
+import physics.quantities.expressions.equal
 import physics.quantities.PValue
+import physics.quantities.Quantity
 import physics.quantities.castAs
 import physics.quantities.doubles.PReal
+import physics.quantities.expressions.VariableValue
 
 
 class Formula(
@@ -23,10 +25,11 @@ class Formula(
 ) {
 
     private companion object Util {
-        fun generateMappersFromEquality(equality: Equality): Map<String, QuantityMapper> {
-            val mappers = mutableMapOf<String, QuantityMapper>()
+        fun generateMappersFromEquality(equality: Equality): Map<String, Collector<Quantity<*>>> {
+            val mappers = mutableMapOf<String, Collector<Quantity<*>>>()
             for (variable in equality.left.allVariables() + equality.right.allVariables()) {
-                mappers[variable] = { args -> equality.compute(variable, arguments = args.mapValues { (_, v) -> v.castAs<PReal>() }) }
+                @Suppress("RemoveExplicitTypeArguments")
+                mappers[variable] = { args -> equality.compute(variable, arguments = args.mapValues { (_, v) -> VariableValue.Single(v.castAs<PReal>()) }) }
             }
             return mappers
         }
@@ -65,7 +68,7 @@ class Formula(
             .mapValues { (_, field) -> field.getNotation() }
             .let { it.mapValues { (variable, notation) -> if (it.values.count { v -> v == notation } > 1) variable else notation } }
 
-        val expression = equality.right.transformBy(variablesToNotations)
+        val expression = equality.right
         val variablesValues = variablesToNotations.toList().joinToString(", ") { (variable, notation) -> "$notation = ${arguments.getValue(variable)}" }
 
         return (Var(field.getNotation()) equal expression).toFlatString() + ", où " + variablesValues

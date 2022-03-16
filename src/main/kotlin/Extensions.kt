@@ -1,3 +1,4 @@
+import physics.quantities.expressions.Expression
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.pow
@@ -70,12 +71,18 @@ internal operator fun Pair<Int, Int>.plus(other: Pair<Int, Int>): Pair<Int, Int>
 }
 
 fun <T> Iterable<T>.filterOut(excluded: Iterable<T>): List<T> {
-    return filter { it !in excluded }
+    return filter { item -> excluded.none { e -> e === item } }
 }
 
-internal fun <T> Collection<T>.getAllArrangements(): List<List<T>> {
-    return if (this.isEmpty()) emptyList()
-    else drop(1).getAllArrangements().map { c -> List(size) { i -> c.take(i) + first() + c.drop(i) } }.flatten()
+inline fun <T, reified U : T> Iterable<T>.filterIsInstanceAndReplace(replacement: (List<U>) -> List<T>): List<T> {
+    val replaced = this.filterIsInstance<U>()
+    val unchanged = this.filterOut(replaced)
+    return unchanged + if (replaced.isNotEmpty()) replacement(replaced) else emptyList()
+}
+
+internal fun <T> Collection<T>.getAllArrangements(): Set<List<T>> {
+    return if (isEmpty()) setOf(emptyList())
+    else drop(1).getAllArrangements().flatMap { c -> List(size) { i -> c.take(i) + first() + c.drop(i) } }.toSet()
 }
 
 infix fun <E> Collection<E>.amputatedOf(other: Iterable<E>): List<E> {
@@ -86,6 +93,13 @@ infix fun <E> Collection<E>.amputatedOf(other: Iterable<E>): List<E> {
 
 internal fun <K, V> List<Map<K, V>>.fuseAll(onFailure: (key: K, value1: V, value2: V) -> V): Map<K, V> {
     return reduce { acc, map -> acc.mergedWith(map, merge = onFailure) }
+}
+
+internal fun <T> Set<T>.getAllSubsets(): Set<Set<T>> {
+    if (isEmpty()) return setOf(emptySet())
+    val head = take(1)
+    val tail = drop(1).toSet()
+    return (tail.getAllSubsets() + tail.getAllSubsets().map { (head + it).toSet() }).toSet()
 }
 
 internal operator fun <T, R> List<T>.times(other: List<R>): List<Pair<T, R>> {
@@ -102,13 +116,13 @@ internal infix fun <K, V> Map<K, V>.isIncludedIn(container: Map<K, V>): Boolean 
     return all { (k, v) -> k in container && container[k] == v }
 }
 
-internal fun <K, V> Map<K, V>.mergedWith(other: Map<K, V>, merge: (key: K, old: V, new: V) -> V): MutableMap<K, V> {
+internal inline fun <K, V> Map<K, V>.mergedWith(other: Map<K, V>, merge: (key: K, old: V, new: V) -> V): MutableMap<K, V> {
     val result = this.toMutableMap()
     result.mergeWith(other, merge)
     return result
 }
 
-internal fun <K, V> Map<K, V>.mergedWith(other: Map<K, V>, merge: (old: V, new: V) -> V): MutableMap<K, V> {
+internal inline fun <K, V> Map<K, V>.mergedWith(other: Map<K, V>, merge: (old: V, new: V) -> V): MutableMap<K, V> {
     val result = this.toMutableMap()
     result.mergeWith(other, merge)
     return result
@@ -116,13 +130,13 @@ internal fun <K, V> Map<K, V>.mergedWith(other: Map<K, V>, merge: (old: V, new: 
 
 
 
-internal fun <K, V> MutableMap<K, V>.mergeWith(other: Map<K, V>, merge: (key: K, old: V, new: V) -> V) {
+internal inline fun <K, V> MutableMap<K, V>.mergeWith(other: Map<K, V>, merge: (key: K, old: V, new: V) -> V) {
     for ((k, v) in other) {
         this[k] = if (containsKey(k)) merge(k, this.getValue(k), v) else v
     }
 }
 
-internal fun <K, V> MutableMap<K, V>.mergeWith(other: Map<K, V>, merge: (old: V, new: V) -> V) {
+internal inline fun <K, V> MutableMap<K, V>.mergeWith(other: Map<K, V>, merge: (old: V, new: V) -> V) {
     for ((k, v) in other) {
         this[k] = if (containsKey(k)) merge(this.getValue(k), v) else v
     }

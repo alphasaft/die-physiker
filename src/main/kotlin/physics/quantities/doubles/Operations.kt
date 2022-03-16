@@ -4,11 +4,12 @@ package physics.quantities.doubles
 
 import physics.quantities.*
 
-fun Quantity<PReal>.applyContinuousFunction(f: MathFunction): Quantity<PReal> =
+fun Quantity<PReal>.applyFunction(f: Function): Quantity<PReal> =
     when (this) {
         is ImpossibleQuantity<*> -> ImpossibleQuantity()
         is AnyQuantity<*> -> f.outDomain
-        is QuantityUnion<*> -> QuantityUnion.new(items.map { (it as Quantity<PReal>).applyContinuousFunction(f) })
+        is QuantityUnion<*> -> QuantityUnion.new(items.map { (it as Quantity<PReal>).applyFunction(f) })
+        is PRealOperand -> f.invokeExhaustively(this)
         else -> f.outDomain
     }
 

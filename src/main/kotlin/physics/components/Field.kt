@@ -33,7 +33,7 @@ class Field<T : PValue<T>> private constructor(
     fun setContent(content: Quantity<*>) {
         require(type == content.type) { "Expected quantity of type ${type.simpleName}, got ${content.type.simpleName}." }
 
-        val newContent = this.content intersect contentNormalizer(@Suppress("UNCHECKED_CAST") (content as Quantity<T>))
+        val newContent = this.content stdIntersect contentNormalizer(@Suppress("UNCHECKED_CAST") (content as Quantity<T>))
         require(newContent !is ImpossibleQuantity<*>) { "Can't set field's content to $content, since it isn't compatible with the current content." }
 
         this.content = newContent

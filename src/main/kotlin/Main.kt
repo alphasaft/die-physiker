@@ -8,20 +8,39 @@ import physics.components.Location
 import physics.components.ComponentsPicker
 import physics.functions.Action
 import physics.quantities.*
-import physics.quantities.doubles.PReal
-import physics.quantities.doubles.PRealInterval
+import physics.quantities.doubles.*
 import physics.quantities.ints.PInt
 import physics.quantities.strings.PString
-import physics.values.units.PUnit
+import physics.quantities.expressions.*
+import physics.quantities.units.PUnit
 import java.io.File
 import java.lang.StringBuilder
 import kotlin.math.min
 
 
 fun main() {
-    val a = PReal(25.0, significantDigitsCount = 2, unit = PUnit())
-    val b = PReal(4.7, significantDigitsCount = 4, unit = PUnit())
-    println(a + b)
+    val interval1 = PRealInterval.new(
+        isLowerBoundClosed = true,
+        lowerBound = PReal("-1.50 kg"),
+        upperBound = PReal("1.50 kg"),
+        isUpperBoundClosed = false,
+    )
+
+    val interval2 = PRealInterval.new(
+        isLowerBoundClosed = true,
+        lowerBound = PReal("0 L2"),
+        upperBound = PReal("100 L2"),
+        isUpperBoundClosed = true
+    )
+
+    val squaresOnly = IntegersComprehension(
+        integersUnit = PUnit("mL"),
+        inDomain = IntegersComprehension.InDomain.N,
+        function = (c(2) * v("x").square()).asFunction("x")
+    )
+
+    println(interval1 * interval2)
+    println(interval2 intersect squaresOnly)
 }
 
 
@@ -34,7 +53,7 @@ fun main2() {
     val scriptFile = File("${cwd()}\\resources\\script.mpsi")
 
     knowledgeFunctionsRegister.addStandardKnowledgeImplementation("configFromAtomicNumber") { arguments ->
-        var remainingElectrons = (arguments["Z"]!!.asPValueOr(PInt(0)).convertTo<PInt>()).value
+        var remainingElectrons = (arguments["Z"]!!.asPValueOr(PInt(0)).useAs<PInt>()).value
         val subshellNames = mapOf(0 to "s", 1 to "p", 2 to "d", 3 to "f")
         val config = StringBuilder()
 
@@ -61,7 +80,7 @@ fun main2() {
     }
 
     knowledgeFunctionsRegister.addStandardKnowledgeImplementation("atomicNumberFromConfig") { arguments ->
-        val config = arguments.getValue("config").asPValue().convertTo<PString>()
+        val config = arguments.getValue("config").asPValue().useAs<PString>()
         PInt(config.split(")").sumOf { it.split("(").first().ifEmpty { "0" }.toInt() })
     }
 
@@ -133,6 +152,4 @@ fun main2() {
             isUpperBoundClosed = false
         )
     ))
-
-    println(quantity)
 }

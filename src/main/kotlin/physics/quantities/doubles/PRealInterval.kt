@@ -1,11 +1,12 @@
+@file:OptIn(ExperimentalStdlibApi::class)
+
 package physics.quantities.doubles
 
-import physics.quantities.AnyQuantity
-import physics.quantities.ImpossibleQuantity
-import physics.quantities.PInterval
-import physics.quantities.Quantity
+import buildArray
+import physics.quantities.*
+import physics.quantities.units.PUnit
+import println
 import kotlin.math.PI
-import kotlin.reflect.KClass
 
 
 class PRealInterval private constructor(
@@ -15,19 +16,17 @@ class PRealInterval private constructor(
     isUpperBoundClosed: Boolean
 ) : PInterval<PReal>(
     type = PReal::class,
-    isLowerBoundClosed && !lowerBound.value.isNegativeInfinity(),
+    isLowerBoundClosed && !lowerBound.isNegativeInfinity(),
     lowerBound,
     upperBound,
-    isUpperBoundClosed && !upperBound.value.isPositiveInfinity()
+    isUpperBoundClosed && !upperBound.isPositiveInfinity()
 ), PRealOperand {
 
     init {
-        require(!lowerBound.value.isPositiveInfinity()) { "Can't specify +oo as lower bound." }
-        require(!upperBound.value.isNegativeInfinity()) { "Can't specify -oo as upper bound." }
+        require(!lowerBound.isPositiveInfinity()) { "Can't specify +oo as lower bound." }
+        require(!upperBound.isNegativeInfinity()) { "Can't specify -oo as upper bound." }
         require(lowerBound.isCompatibleWith(upperBound)) { "Bounds should be interconvertible." }
     }
-
-    override val type: KClass<PReal> = PReal::class
 
     companion object Factory {
         fun new(
@@ -38,17 +37,19 @@ class PRealInterval private constructor(
         ): Quantity<PReal> =
             PRealInterval(isLowerBoundClosed, lowerBound, upperBound, isUpperBoundClosed).simplify()
 
-        fun withOrderedBounds(
-            isBound1Closed: Boolean,
-            bound1: PReal,
-            bound2: PReal,
-            isBound2Closed: Boolean,
-        ) = PRealInterval(
-            if (bound1 <= bound2) isBound1Closed else isBound2Closed,
-            if (bound1 <= bound2) bound1 else bound2,
-            if (bound2 >= bound1) bound2 else bound1,
-            if (bound2 >= bound1) isBound2Closed else isBound1Closed,
-        ).simplify()
+        fun newUsingBounds(vararg bounds: Pair<PReal, Boolean>): Quantity<PReal> {
+            require(bounds.size >= 2) { "Expected at least two bounds." }
+
+            val (lowerBound, isLowerBoundClosed) = bounds.minByOrNull { it.first }!!
+            val (upperBound, isUpperBoundClosed) = bounds.maxByOrNull { it.first }!!
+
+            return new(
+                isLowerBoundClosed,
+                lowerBound,
+                upperBound,
+                isUpperBoundClosed,
+            )
+        }
 
         fun fromPReal(value: PReal): PRealInterval = PRealInterval(
             isLowerBoundClosed = true,
@@ -104,6 +105,27 @@ class PRealInterval private constructor(
         isUpperBoundClosed
     )
 
+    private fun containsZero() = PReal(0.0, Int.MAX_VALUE, unit = lowerBound.unit) in this
+    private fun negativePart() = coerceUpperBound(PReal(0.0, Int.MAX_VALUE, unit = upperBound.unit))
+    private fun positivePart() = coerceLowerBound(PReal(0.0, Int.MAX_VALUE, unit = lowerBound.unit))
+
+    fun amplitude() = upperBound - lowerBound
+    fun hasFiniteAmplitude() = amplitude().isFinite()
+    fun hasInfiniteAmplitude() = !hasFiniteAmplitude()
+
+    fun integersOnly(unit: PUnit): Iterable<PReal> {
+        val first = lowerBound.convertInto(unit).let { (if (it.isInt() && isLowerBoundClosed) it else it+PReal(1.0, unit = unit)).floor() }
+
+        return object : Iterable<PReal> {
+            override fun iterator() = object : Iterator<PReal> {
+                private var current = first
+
+                override fun hasNext(): Boolean = current in this@PRealInterval
+                override fun next(): PReal = current.also { current += PReal(1.0, unit = unit) }
+            }
+        }
+    }
+
     override fun unaryMinus(): Quantity<PReal> = new(
         isUpperBoundClosed,
         -upperBound,
@@ -137,31 +159,17 @@ class PRealInterval private constructor(
         else -> AnyQuantity()
     }
 
-    private operator fun times(other: PReal): Quantity<PReal> = withOrderedBounds(
-        isLowerBoundClosed,
-        lowerBound * other,
-        upperBound * other,
-        isUpperBoundClosed,
+    private operator fun times(other: PReal): Quantity<PReal> = newUsingBounds(
+        Pair(lowerBound * other, isLowerBoundClosed),
+        Pair(upperBound * other, isUpperBoundClosed),
     )
 
-    private operator fun times(other: PRealInterval): Quantity<PReal> {
-        val possibleBounds = listOf(
-            Pair(lowerBound * other.lowerBound, isLowerBoundClosed && other.isLowerBoundClosed),
-            Pair(lowerBound * other.upperBound, isLowerBoundClosed && other.isUpperBoundClosed),
-            Pair(upperBound * other.lowerBound, isUpperBoundClosed && other.isLowerBoundClosed),
-            Pair(upperBound * other.upperBound, isUpperBoundClosed && other.isUpperBoundClosed),
-        )
-
-        val (lowerBound, isLowerBoundClosed) = possibleBounds.minByOrNull { it.first }!!
-        val (upperBound, isUpperBoundClosed) = possibleBounds.maxByOrNull { it.first }!!
-
-        return new(
-            isLowerBoundClosed,
-            lowerBound,
-            upperBound,
-            isUpperBoundClosed
-        )
-    }
+    private operator fun times(other: PRealInterval): Quantity<PReal> = newUsingBounds(
+        Pair(lowerBound * other.lowerBound, isLowerBoundClosed && other.isLowerBoundClosed),
+        Pair(lowerBound * other.upperBound, isLowerBoundClosed && other.isUpperBoundClosed),
+        Pair(upperBound * other.lowerBound, isUpperBoundClosed && other.isLowerBoundClosed),
+        Pair(upperBound * other.upperBound, isUpperBoundClosed && other.isUpperBoundClosed),
+    )
 
     override fun div(other: PRealOperand): Quantity<PReal> = when (other) {
         is PReal -> this / other
@@ -169,16 +177,11 @@ class PRealInterval private constructor(
         else -> AnyQuantity()
     }
 
-    private operator fun div(other: PReal): Quantity<PReal> = withOrderedBounds(
-        isLowerBoundClosed,
-        lowerBound / other,
-        upperBound / other,
-        isUpperBoundClosed,
-    )
+    private operator fun div(other: PReal): Quantity<PReal> = this * (PReal(1.0)/other)
 
     private operator fun div(other: PRealInterval): Quantity<PReal> {
-        val positive = other.coerceLowerBound(PReal(0.0))
-        val negative = other.coerceUpperBound(PReal(0.0))
+        val positive = other.positivePart()
+        val negative = other.negativePart()
         val dividedByPositivePart = divideByQuantityThatIncludes0OnlyAsBound(positive)
         val dividedByNegativePart = divideByQuantityThatIncludes0OnlyAsBound(negative)
         return dividedByNegativePart union dividedByPositivePart
@@ -189,8 +192,8 @@ class PRealInterval private constructor(
             is ImpossibleQuantity<PReal> -> ImpossibleQuantity()
             is PInterval<PReal> -> this * PRealInterval(
                 isLowerBoundClosed = quantity.isUpperBoundClosed,
-                lowerBound = PReal(1.0)/quantity.upperBound,
-                upperBound = PReal(1.0)/quantity.lowerBound,
+                lowerBound = (PReal(1.0)/quantity.upperBound).let { if (it.isPositiveInfinity()) -it else it },
+                upperBound = (PReal(1.0)/quantity.lowerBound).let { if (it.isNegativeInfinity()) -it else it },
                 isUpperBoundClosed = quantity.isLowerBoundClosed
             )
             else -> this / quantity
@@ -198,11 +201,66 @@ class PRealInterval private constructor(
     }
 
     override fun pow(other: PRealOperand): Quantity<PReal> {
-        TODO("Not yet implemented")
-        // x ^ y == exp( y * ln(x) ), I guess it's continuous in y (and in x but this is well-known)
+        return when (other) {
+            is PReal -> this.pow(other)
+            is PRealInterval -> AnyQuantity()
+            else -> AnyQuantity()
+        }
     }
 
-    override fun applyContinuousFunction(f: MathFunction): Quantity<PReal> {
-        TODO("Not yet implemented")
+    private fun pow(other: PReal): Quantity<PReal> {
+        return when {
+            other.withoutUnit() < PReal(0) -> PReal(1)/(this.pow(-other))
+            other.withoutUnit() == PReal(0) -> PReal(1)
+            else -> {
+                newUsingBounds(*buildArray {
+                    add(Pair(lowerBound.pow(other), isLowerBoundClosed))
+                    add(Pair(upperBound.pow(other), isUpperBoundClosed))
+                    if (this@PRealInterval.containsZero()) add(Pair(PReal(0).withUnit(lowerBound.unit), true))
+                })
+            }
+        }
+    }
+
+    private operator fun ((Double) -> Double).invoke(x: PReal) = x.applyFunction(this)
+
+    fun applyMonotonousFunction(f: (Double) -> Double): Quantity<PReal> {
+        return newUsingBounds(
+            f(lowerBound) to isLowerBoundClosed,
+            f(upperBound) to isUpperBoundClosed
+        )
+    }
+
+    fun applyPeriodicalFunction(f: (Double) -> Double, t: PReal, extremasOnIntervalFrom0ToT: Map<PReal, PReal>): Quantity<PReal> {
+        val offset = (lowerBound/t).floor()*t
+        val withOffsetRemoved = (this - offset) as PRealInterval
+        val withSizeReducedToTAtMost = withOffsetRemoved.coerceUpperBound(withOffsetRemoved.lowerBound+t) as PInterval
+        val intervalToT = withSizeReducedToTAtMost.coerceUpperBound(t)
+        val intervalFrom0 = withSizeReducedToTAtMost.coerceLowerBound(t) - t
+        val completeInterval = intervalFrom0 union intervalToT
+
+        val bounds = mutableSetOf<Pair<PReal, Boolean>>()
+
+        fun addBounds(q: Quantity<PReal>) {
+            when (q) {
+                is PReal -> bounds.add(Pair(f(q), true))
+                is PRealInterval -> {
+                    bounds.add(Pair(f(q.lowerBound), q.isLowerBoundClosed))
+                    bounds.add(Pair(f(q.upperBound), q.isUpperBoundClosed))
+                }
+                else -> {}
+            }
+        }
+
+        addBounds(intervalFrom0)
+        addBounds(intervalToT)
+
+        for ((extremaX, extremaY) in extremasOnIntervalFrom0ToT) {
+            if (extremaX in completeInterval) {
+                bounds.add(Pair(extremaY, true))
+            }
+        }
+
+        return newUsingBounds(*bounds.toTypedArray())
     }
 }

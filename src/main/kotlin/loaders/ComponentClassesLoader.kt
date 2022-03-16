@@ -11,9 +11,7 @@ import physics.components.ComponentClass
 import physics.components.Group
 import physics.components.ComponentStructure
 import physics.components.Field
-import physics.values.*
 import physics.quantities.PValue
-import physics.quantities.strings.PString
 
 
 class ComponentClassesLoader(

@@ -4,10 +4,10 @@ import Args
 import loaders.base.Ast
 import loaders.base.AstNode
 import loaders.base.DataLoader
-import physics.QuantityMapper
 import physics.components.Component
 import physics.components.ComponentClass
 import physics.knowledge.Knowledge
+import physics.quantities.Quantity
 
 
 class KnowledgeLoader(
@@ -20,13 +20,17 @@ class KnowledgeLoader(
 
     class FunctionsRegister internal constructor(): RequirementLoader.FunctionsRegister() {
         private val specsPredicates = mutableMapOf<String, (Component, Args<Component>) -> Boolean>()
-        private val standardKnowledgeImplementations = mutableMapOf<String, QuantityMapper>()
+        private val standardKnowledgeImplementations =
+            mutableMapOf<String, (Args<Quantity<*>>) -> Quantity<*>>()
 
-        fun addStandardKnowledgeImplementation(implementationRef: String, implementation: QuantityMapper) {
+        fun addStandardKnowledgeImplementation(
+            implementationRef: String,
+            implementation: (Args<Quantity<*>>) -> Quantity<*>
+        ) {
             standardKnowledgeImplementations[implementationRef] = implementation
         }
 
-        fun getComplexKnowledgeImplementation(implementationRef: String): QuantityMapper {
+        fun getComplexKnowledgeImplementation(implementationRef: String): (Args<Quantity<*>>) -> Quantity<*> {
             return standardKnowledgeImplementations.getValue(implementationRef)
         }
     }

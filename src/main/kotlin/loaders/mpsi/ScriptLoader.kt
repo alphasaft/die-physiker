@@ -8,7 +8,6 @@ import loaders.mpsi.statements.*
 import loaders.mpsi.statements.ExternalVariableDeclaration
 import loaders.mpsi.statements.Statement
 import physics.components.ComponentClass
-import physics.values.*
 import physics.quantities.booleans.PBoolean
 import physics.quantities.doubles.PReal
 import physics.quantities.ints.PInt

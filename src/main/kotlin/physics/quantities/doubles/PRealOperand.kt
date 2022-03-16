@@ -9,5 +9,4 @@ interface PRealOperand : Quantity<PReal> {
     operator fun times(other: PRealOperand): Quantity<PReal>
     operator fun div(other: PRealOperand): Quantity<PReal>
     fun pow(other: PRealOperand): Quantity<PReal>
-    fun applyContinuousFunction(f: MathFunction): Quantity<PReal>
 }

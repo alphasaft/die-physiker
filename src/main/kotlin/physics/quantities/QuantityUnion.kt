@@ -23,13 +23,21 @@ open class QuantityUnion<V : PValue<V>> private constructor(
 
     override fun toString(): String = items.joinToString(" || ")
 
-    override fun contains(value: V): Boolean = items.any { value in it }
-
-    override fun intersect(quantity: Quantity<V>): Quantity<V> {
-        return new(type, items.map { it intersect quantity })
+    override fun equals(other: Any?): Boolean {
+        return other is QuantityUnion<*> && items == other.items
     }
 
-    override fun union(quantity: Quantity<V>): Quantity<V> {
+    override fun hashCode(): Int {
+        return items.hashCode()
+    }
+
+    override fun contains(value: V): Boolean = items.any { value in it }
+
+    override fun stdIntersect(quantity: Quantity<V>): Quantity<V> {
+        return new(type, items.map { it stdIntersect quantity })
+    }
+
+    override fun stdUnion(quantity: Quantity<V>): Quantity<V> {
         return new(type, items + quantity)
     }
 

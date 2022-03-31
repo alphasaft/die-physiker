@@ -3,9 +3,11 @@ package physics.quantities.expressions
 import Args
 import noop
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
+import physics.quantities.IntegersComprehension
+import physics.quantities.PReal
 
 class Counter(val name: String) : Expression() {
+    override val outDomain: Quantity<PReal> = IntegersComprehension(IntegersComprehension.InDomain.Z)
     override val members: Collection<Expression> = emptyList()
     override val complexity: Int = 1
 
@@ -39,5 +41,19 @@ class Counter(val name: String) : Expression() {
 
     override fun withMembers(members: List<Expression>): Expression {
         return this
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other is Counter && other.name == name
+    }
+
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + name.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return name
     }
 }

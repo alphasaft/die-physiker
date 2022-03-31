@@ -1,7 +1,7 @@
 package physics.quantities.expressions
 
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 
 
 class Equality(val left: Expression, val right: Expression, ) {

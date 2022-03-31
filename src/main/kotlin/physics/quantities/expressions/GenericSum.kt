@@ -2,8 +2,9 @@ package physics.quantities.expressions
 
 import noop
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 import physics.quantities.doubles.plus
+import kotlin.reflect.KFunction1
 
 
 class GenericSum(
@@ -14,14 +15,14 @@ class GenericSum(
 ) : GenericExpression(underlyingExpression, counterName, start, end) {
 
     constructor(
-        variable: String,
+        series: String,
         counter: String,
         start: Bound = Bound.Static(1),
         endBound: Bound,
-    ) : this(Var(variable), counter, start, endBound)
+    ) : this(Indexing(series, Indexing.Indexer.UseCounter(counter)), counter, start, endBound)
 
     override val members: Collection<Expression> = listOf(underlyingExpression)
-    override val associatedStandardExpression: (List<Expression>) -> Expression = ::Sum
+    override val associatedStandardExpressionCtr: KFunction1<List<Expression>, Expression> = ::Sum
     override val reducer1: (PReal, PReal) -> PReal = PReal::plus
     override val reducer2: (Quantity<PReal>, Quantity<PReal>) -> Quantity<PReal> = Quantity<PReal>::plus
 

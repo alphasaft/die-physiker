@@ -1,9 +1,8 @@
 package physics.quantities.expressions
 
 import physics.quantities.Quantity
-import physics.quantities.doubles.Function
-import physics.quantities.doubles.PReal
-import physics.quantities.doubles.PRealOperand
+import physics.quantities.Function
+import physics.quantities.PReal
 
 
 class ExpressionAsFunction(

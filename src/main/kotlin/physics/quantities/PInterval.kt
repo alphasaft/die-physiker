@@ -77,21 +77,21 @@ abstract class PInterval<T>(
         )
     }
 
-    fun coerceLowerBound(min: T): Quantity<T> {
-        return if (lowerBound < min) new(
-            isLowerBoundClosed = true,
+    fun coerceLowerBound(min: T, closed: Boolean): Quantity<T> {
+        return if (lowerBound <= min) new(
+            isLowerBoundClosed = closed,
             min,
             upperBound,
             isUpperBoundClosed,
         ) else this
     }
 
-    fun coerceUpperBound(max: T): Quantity<T> {
-        return if (upperBound > max) new(
+    fun coerceUpperBound(max: T, closed: Boolean): Quantity<T> {
+        return if (upperBound >= max) new(
             isLowerBoundClosed,
             lowerBound,
             max,
-            isUpperBoundClosed = true
+            isUpperBoundClosed = closed
         ) else this
     }
 

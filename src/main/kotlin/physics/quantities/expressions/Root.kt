@@ -3,7 +3,7 @@ package physics.quantities.expressions
 import Args
 import isInt
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 import physics.quantities.doubles.div
 import physics.quantities.doubles.pow
 import physics.quantities.doubles.unaryMinus

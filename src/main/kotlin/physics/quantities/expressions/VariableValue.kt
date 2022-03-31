@@ -1,8 +1,7 @@
 package physics.quantities.expressions
 
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
-import kotlin.jvm.Throws
+import physics.quantities.PReal
 
 sealed class VariableValue<out T : Quantity<PReal>> {
     class Single<out T : Quantity<PReal>>(val content: T) : VariableValue<T>()

@@ -1,6 +1,6 @@
 package loaders.mpsi.statements
 
-import physics.quantities.strings.PString
+import physics.quantities.PString
 import physics.quantities.PValue
 
 class MpsiBuiltinLiteral(val value: PValue<*>) : Expression() {

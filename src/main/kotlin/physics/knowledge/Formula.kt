@@ -9,7 +9,7 @@ import physics.quantities.expressions.equal
 import physics.quantities.PValue
 import physics.quantities.Quantity
 import physics.quantities.castAs
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 import physics.quantities.expressions.VariableValue
 
 

@@ -8,9 +8,8 @@ import physics.components.Location
 import physics.components.ComponentsPicker
 import physics.functions.Action
 import physics.quantities.*
-import physics.quantities.doubles.*
-import physics.quantities.ints.PInt
-import physics.quantities.strings.PString
+import physics.quantities.PInt
+import physics.quantities.PString
 import physics.quantities.expressions.*
 import physics.quantities.units.PUnit
 import java.io.File
@@ -19,28 +18,40 @@ import kotlin.math.min
 
 
 fun main() {
-    val interval1 = PRealInterval.new(
+    val interval1 = PRealInterval.raw(
         isLowerBoundClosed = true,
         lowerBound = PReal("-1.50 kg"),
         upperBound = PReal("1.50 kg"),
         isUpperBoundClosed = false,
     )
 
-    val interval2 = PRealInterval.new(
+    val interval2 = PRealInterval.raw(
         isLowerBoundClosed = true,
-        lowerBound = PReal("0 L2"),
-        upperBound = PReal("100 L2"),
+        lowerBound = PReal("0 mL2"),
+        upperBound = PReal("100 mL2"),
         isUpperBoundClosed = true
     )
 
     val squaresOnly = IntegersComprehension(
         integersUnit = PUnit("mL"),
         inDomain = IntegersComprehension.InDomain.N,
-        function = (c(2) * v("x").square()).asFunction("x")
+        function = (c(2) * v("x").square() + c(PReal("2.0 mL2"))).asFunction("x")
     )
 
-    println(interval1 * interval2)
-    println(interval2 intersect squaresOnly)
+    val periodical1 = PeriodicalQuantity.new(interval1, period = PReal("1000.0 kg")) // Warning bug with CS (like -1.5 + 1000.0 = 999)
+    val periodical2 = PeriodicalQuantity.new(interval2, period = PReal("1000.0 mL2"))
+
+    val n = 12
+    val sum: Expression = GenericSum(
+        underlyingExpression = Counter("i"),
+        counterName = "i",
+        end = GenericExpression.Bound.Static(n)
+    )
+    val sum2: Expression = c(n) * c(n+1) / c(2)
+
+    println(sum)
+    println(sum.evaluate(), sum2.evaluate())
+    println(periodical1)
 }
 
 

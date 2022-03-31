@@ -3,8 +3,8 @@ package physics.quantities.expressions
 import Args
 import physics.quantities.ImpossibleQuantity
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
-import physics.quantities.doubles.PRealInterval
+import physics.quantities.PReal
+import physics.quantities.PRealInterval
 import physics.quantities.doubles.pow
 
 

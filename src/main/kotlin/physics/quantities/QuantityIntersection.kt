@@ -63,4 +63,8 @@ class QuantityIntersection<V : PValue<V>> private constructor(
 
         return this
     }
+
+    fun mapItems(mapper: (Quantity<V>) -> Quantity<V>): Quantity<V> {
+        return new(type, items.map(mapper))
+    }
 }

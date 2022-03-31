@@ -5,7 +5,7 @@ import UnorderedList
 import filterIsInstanceAndReplace
 import filterOut
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 import physics.quantities.doubles.times
 
 

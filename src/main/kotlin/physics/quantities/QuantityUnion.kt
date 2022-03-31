@@ -42,20 +42,16 @@ open class QuantityUnion<V : PValue<V>> private constructor(
     }
 
     override fun simplify(): Quantity<V> {
-        return when {
-            items.isEmpty() -> ImpossibleQuantity(type)
-            items.size == 1 -> items.single()
-            else -> reduceItems()
-        }
-    }
-
-    private fun reduceItems(): Quantity<V> {
         if (items.any { it is AnyQuantity<V> }) return AnyQuantity(type)
 
         val items = items
-            .filterNot { it is ImpossibleQuantity<*> }
-            .map { if (it is QuantityUnion) it.items else listOf(it) }
-            .flatten()
+            .filterNot { it is ImpossibleQuantity }
+            .flatMap { if (it is QuantityUnion) it.items else listOf(it) }
+            .toSet()
+
+        if (items.isEmpty()) return ImpossibleQuantity(type)
+        if (items.size == 1) return items.single()
+        if (items.size == 2) return this
 
         for ((i, x) in items.withIndex()) {
             for (y in items.drop(i+1)) {
@@ -65,5 +61,9 @@ open class QuantityUnion<V : PValue<V>> private constructor(
         }
 
         return this
+    }
+
+    fun mapItems(mapper: (Quantity<V>) -> Quantity<V>): Quantity<V> {
+        return new(type, items.map(mapper))
     }
 }

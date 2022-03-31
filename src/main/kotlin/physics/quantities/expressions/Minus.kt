@@ -2,7 +2,7 @@ package physics.quantities.expressions
 
 import Args
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 import physics.quantities.doubles.unaryMinus
 
 class Minus(val value: Expression) : Expression() {

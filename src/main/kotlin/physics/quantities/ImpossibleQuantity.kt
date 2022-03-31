@@ -13,7 +13,7 @@ class ImpossibleQuantity<V : PValue<V>>(override val type: KClass<V>) : Quantity
     override fun contains(value: V): Boolean = false
     override fun simplify(): Quantity<V> = this
 
-    override fun toString(): String = "[valeur impossible]"
+    override fun toString(): String = "<valeur impossible>"
     override fun equals(other: Any?): Boolean = other is ImpossibleQuantity<*> && type == other.type
     override fun hashCode(): Int = ImpossibleQuantity::class.hashCode() * 31 + type.hashCode()
 }

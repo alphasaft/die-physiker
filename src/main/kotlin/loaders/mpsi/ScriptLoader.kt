@@ -8,10 +8,10 @@ import loaders.mpsi.statements.*
 import loaders.mpsi.statements.ExternalVariableDeclaration
 import loaders.mpsi.statements.Statement
 import physics.components.ComponentClass
-import physics.quantities.booleans.PBoolean
-import physics.quantities.doubles.PReal
-import physics.quantities.ints.PInt
-import physics.quantities.strings.PString
+import physics.quantities.PBoolean
+import physics.quantities.PReal
+import physics.quantities.PInt
+import physics.quantities.PString
 
 
 class ScriptLoader(

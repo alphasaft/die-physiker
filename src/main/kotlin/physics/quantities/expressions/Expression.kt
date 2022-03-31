@@ -6,7 +6,7 @@ import alwaysTrue
 import noop
 import physics.quantities.AnyQuantity
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 import safe
 import kotlin.reflect.KClass
 
@@ -16,6 +16,7 @@ abstract class Expression {
     open val complexity get() = members.size
 
     open val outDomain: Quantity<PReal> get() = evaluateExhaustively(allVariables().associateWith<String, VariableValue<Quantity<PReal>>> { VariableValue.Single(AnyQuantity()) })
+    open val additionalEqualityCheck: (Expression) -> Boolean = { true }
 
     private var simplified: Expression? = null
         set(value) {
@@ -98,15 +99,14 @@ abstract class Expression {
 
     abstract fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int> = emptyMap()): Quantity<PReal>
 
-    abstract fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int> = emptyMap()): PReal
+    abstract fun evaluate(arguments: Args<VariableValue<PReal>> = emptyMap(), counters: Args<Int> = emptyMap()): PReal
 
     abstract fun derive(variable: String): Expression
 
     override fun equals(other: Any?): Boolean {
-        if (members.isEmpty()) throw IllegalStateException("Expression with no member should override equals().")
+        if (members.isEmpty()) throw IllegalStateException("Expression with no members should override equals.")
         if (other !is Expression) return false
-        if (other.members.isEmpty()) return other == this
-        return this::class == other::class && this.members == other.members
+        return this::class == other::class && members == other.members
     }
 
     override fun hashCode(): Int {

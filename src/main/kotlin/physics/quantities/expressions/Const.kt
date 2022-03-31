@@ -2,8 +2,8 @@ package physics.quantities.expressions
 
 import Args
 import noop
+import physics.quantities.PReal
 import physics.quantities.Quantity
-import physics.quantities.doubles.*
 
 
 class Const(val value: PReal) : Expression() {

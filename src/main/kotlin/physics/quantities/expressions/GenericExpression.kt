@@ -2,7 +2,9 @@ package physics.quantities.expressions
 
 import Args
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
+import kotlin.reflect.KClass
+import kotlin.reflect.KFunction1
 
 
 abstract class GenericExpression(
@@ -14,7 +16,7 @@ abstract class GenericExpression(
 
     protected val counter = Counter(counterName)
     override val members: Collection<Expression> = listOf(term)
-    protected abstract val associatedStandardExpression: (List<Expression>) -> Expression
+    protected abstract val associatedStandardExpressionCtr: KFunction1<List<Expression>, Expression>
 
     protected abstract val reducer1: (PReal, PReal) -> PReal
     protected abstract val reducer2: (Quantity<PReal>, Quantity<PReal>) -> Quantity<PReal>
@@ -67,7 +69,7 @@ abstract class GenericExpression(
     }
 
     override fun toString(): String {
-        val functionName = associatedStandardExpression::class.simpleName!!.lowercase()
+        val functionName = (associatedStandardExpressionCtr.returnType.classifier as KClass<*>).simpleName
         return "$functionName($counterName, $start, $end) { $term } "
     }
 

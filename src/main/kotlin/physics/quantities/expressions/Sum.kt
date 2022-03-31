@@ -8,7 +8,7 @@ import filterIsInstanceAndReplace
 import isInt
 import physics.quantities.Quantity
 import physics.quantities.asPValue
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 import physics.quantities.doubles.plus
 
 

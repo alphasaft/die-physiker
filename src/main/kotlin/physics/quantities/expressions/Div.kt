@@ -2,7 +2,7 @@ package physics.quantities.expressions
 
 import Args
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 import physics.quantities.doubles.div
 
 class Div(val dividend: Expression, val divider: Expression) : Expression() {

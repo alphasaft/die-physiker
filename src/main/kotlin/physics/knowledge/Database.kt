@@ -8,7 +8,7 @@ import physics.components.Context
 import physics.knowledge.connections.DatabaseConnection
 import physics.knowledge.connections.FileDatabaseConnection
 import physics.quantities.PValue
-import physics.quantities.strings.PString
+import physics.quantities.PString
 
 
 class Database(

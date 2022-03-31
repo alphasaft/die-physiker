@@ -3,7 +3,7 @@ package physics.quantities.expressions
 import Args
 import physics.quantities.*
 import physics.quantities.doubles.*
-import physics.quantities.doubles.Function
+import physics.quantities.Function
 import kotlin.math.*
 import kotlin.reflect.full.primaryConstructor
 
@@ -221,20 +221,12 @@ class Arcsin(argument: Expression) : NativeFunction(argument) {
     override val functionDerivative: ExpressionAsFunction = (c(1) / sqrt( v("x").square() + c(1) )).asFunction("x")
     override val reciprocal: ExpressionAsFunction = Sin(Var("x")).asFunction("x")
 
-    override fun rewriteToSimplifyArgument(): Expression {
-        val simplifiedArgument = argument.simplify()
-        if (simplifiedArgument is Minus) {
-            return Cos(simplifiedArgument.value)
-        }
-        return this
-    }
-
     override fun invoke(x: PReal): PReal {
-        return x.applyFunction(::sin)
+        return x.applyFunction(::asin)
     }
 
     override fun invoke(x: PRealInterval): Quantity<PReal> {
-        return x.applyPeriodicalFunction(::cos, t = PReal(2*PI), mapOf(PReal(0) to PReal(1), PReal(PI) to PReal(-1)))
+        return x.applyPeriodicalFunction(::asin, t = PReal(2*PI), mapOf(PReal(0) to PReal(1), PReal(PI) to PReal(-1)))
     }
 }
 
@@ -245,19 +237,11 @@ class Arccos(argument: Expression) : NativeFunction(argument) {
     override val functionDerivative: ExpressionAsFunction = (c(-1) / sqrt( v("x").square() + c(1) )).asFunction("x")
     override val reciprocal: ExpressionAsFunction = Cos(Var("x")).asFunction("x")
 
-    override fun rewriteToSimplifyArgument(): Expression {
-        val simplifiedArgument = argument.simplify()
-        if (simplifiedArgument is Minus) {
-            return Cos(simplifiedArgument.value)
-        }
-        return this
-    }
-
     override fun invoke(x: PReal): PReal {
-        return x.applyFunction(::sin)
+        return x.applyFunction(::acos)
     }
 
     override fun invoke(x: PRealInterval): Quantity<PReal> {
-        return x.applyPeriodicalFunction(::cos, t = PReal(2*PI), mapOf(PReal(0) to PReal(1), PReal(PI) to PReal(-1)))
+        return x.applyMonotonousFunction(::acos)
     }
 }

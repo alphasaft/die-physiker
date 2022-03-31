@@ -1,6 +1,6 @@
 package physics.quantities.expressions
 
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 
 fun v(name: String): Var = Var(name)
 fun c(value: Int): Const = Const(value)

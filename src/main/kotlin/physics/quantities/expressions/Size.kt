@@ -3,7 +3,7 @@ package physics.quantities.expressions
 import Args
 import noop
 import physics.quantities.Quantity
-import physics.quantities.doubles.PReal
+import physics.quantities.PReal
 
 class Size(private val seriesName: String) : Expression() {
     override val members: Collection<Expression> = emptyList()

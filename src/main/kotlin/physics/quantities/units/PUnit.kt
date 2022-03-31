@@ -4,7 +4,6 @@ import Couple
 import isInt
 import mergedWith
 import physics.UnitException
-import println
 import kotlin.math.pow
 
 
@@ -35,34 +34,34 @@ class PUnit(private val signature: UnitSignature) {
         )
 
         private val unitGroups = listOf(
-            PlainUnitGroup("temps", "s", generateUnits("s") + mapOf("min" to 60.0, "h" to 3600.0, "an" to 31557600.0)),
-            PlainUnitGroup("distance", "m", generateUnits("m") + mapOf("UA" to 1.5E8, "AL" to 9.461E15)),
-            PlainUnitGroup("masse", "kg", generateUnits("g").mapValues { (_, v) -> v*10E-3 } + mapOf("g" to 1E-3, "t" to 1E3, "Mt" to 1E9, "Gt" to 1E12)),
-            PlainUnitGroup("quantité de matière", "mol", generateUnits("mol")),
-            PlainUnitGroup("température", "K", generateUnits("K")),
-            PlainUnitGroup("intensité lumineuse", "lux", generateUnits("lux")),
-            PlainUnitGroup("débit électrique", "A", generateUnits("A"))
+            StandardUnitGroup("temps", "s", generateUnits("s") + mapOf("min" to 60.0, "h" to 3600.0, "an" to 31557600.0)),
+            StandardUnitGroup("distance", "m", generateUnits("m") + mapOf("UA" to 1.5E8, "AL" to 9.461E15)),
+            StandardUnitGroup("masse", "kg", generateUnits("g").mapValues { (_, v) -> v*10E-3 } + mapOf("g" to 1E-3, "t" to 1E3, "Mt" to 1E9, "Gt" to 1E12)),
+            StandardUnitGroup("quantité de matière", "mol", generateUnits("mol")),
+            StandardUnitGroup("température", "K", generateUnits("K")),
+            StandardUnitGroup("intensité lumineuse", "lux", generateUnits("lux")),
+            StandardUnitGroup("débit électrique", "A", generateUnits("A"))
         )
 
         private val aliasesGroups = listOf(
-            UnitAliasGroup("force", mapOf("kg" to 1, "m" to 1, "s" to -2), "N", generateUnits("N")),
-            UnitAliasGroup("énergie", mapOf("N" to 1, "m" to 1), "J", generateUnits("J")),
-            UnitAliasGroup("pression", mapOf("N" to 1, "m" to -2), "Pa", generateUnits("Pa")),
-            UnitAliasGroup("puissance", mapOf("J" to 1, "s" to -1), "W", generateUnits("W")),
-            UnitAliasGroup("tension", mapOf("W" to 1, "A" to -1), "V", generateUnits("V")),
-            UnitAliasGroup("activité catalytique", mapOf("mol" to 1, "s" to -1), "kat", generateUnits("kat")),
-            UnitAliasGroup("charge", mapOf("A" to 1, "s" to 1), "C", generateUnits("C")),
-            UnitAliasGroup("capacitance", mapOf("C" to 1, "V" to -1), "F", generateUnits("F")),
-            UnitAliasGroup("flux magnétique", mapOf("V" to 1, "s" to 1), "Wb", generateUnits("Wb")),
-            UnitAliasGroup("résistance", mapOf("V" to 1, "A" to -1), "Ohm", generateUnits("Ohm")),
-            UnitAliasGroup("conductance", mapOf("Ohm" to -1), "S", generateUnits("S")),
-            UnitAliasGroup("activité radioactive", mapOf("s" to -1), "Bq", generateUnits("Bq")),
-            UnitAliasGroup("fréquence", mapOf("s" to -1), "Hz", generateUnits("Hz")),
-            UnitAliasGroup("dose absorbée", mapOf("J" to 1, "kg" to -1), "Gy", generateUnits("Gy")),
-            UnitAliasGroup("dose efficace", mapOf("J" to 1, "kg" to -1), "Sv", generateUnits("Sv")),
-            UnitAliasGroup("inductance", mapOf("Wb" to 1, "s" to -1), "H", generateUnits("H")),
-            UnitAliasGroup("densité de flux magnétique", mapOf("Wb" to 1, "m" to -2), "T", generateUnits("T")),
-            UnitAliasGroup("volume", mapOf("dm" to 3), "L", generateUnits("L")),
+            AliasedUnitGroup("force", mapOf("kg" to 1, "m" to 1, "s" to -2), "N", generateUnits("N")),
+            AliasedUnitGroup("énergie", mapOf("N" to 1, "m" to 1), "J", generateUnits("J")),
+            AliasedUnitGroup("pression", mapOf("N" to 1, "m" to -2), "Pa", generateUnits("Pa")),
+            AliasedUnitGroup("puissance", mapOf("J" to 1, "s" to -1), "W", generateUnits("W")),
+            AliasedUnitGroup("tension", mapOf("W" to 1, "A" to -1), "V", generateUnits("V")),
+            AliasedUnitGroup("activité catalytique", mapOf("mol" to 1, "s" to -1), "kat", generateUnits("kat")),
+            AliasedUnitGroup("charge", mapOf("A" to 1, "s" to 1), "C", generateUnits("C")),
+            AliasedUnitGroup("capacitance", mapOf("C" to 1, "V" to -1), "F", generateUnits("F")),
+            AliasedUnitGroup("flux magnétique", mapOf("V" to 1, "s" to 1), "Wb", generateUnits("Wb")),
+            AliasedUnitGroup("résistance", mapOf("V" to 1, "A" to -1), "Ohm", generateUnits("Ohm")),
+            AliasedUnitGroup("conductance", mapOf("Ohm" to -1), "S", generateUnits("S")),
+            AliasedUnitGroup("activité radioactive", mapOf("s" to -1), "Bq", generateUnits("Bq")),
+            AliasedUnitGroup("fréquence", mapOf("s" to -1), "Hz", generateUnits("Hz")),
+            AliasedUnitGroup("dose absorbée", mapOf("J" to 1, "kg" to -1), "Gy", generateUnits("Gy")),
+            AliasedUnitGroup("dose efficace", mapOf("J" to 1, "kg" to -1), "Sv", generateUnits("Sv")),
+            AliasedUnitGroup("inductance", mapOf("Wb" to 1, "s" to -1), "H", generateUnits("H")),
+            AliasedUnitGroup("densité de flux magnétique", mapOf("Wb" to 1, "m" to -2), "T", generateUnits("T")),
+            AliasedUnitGroup("volume", mapOf("dm" to 3), "L", generateUnits("L")),
         )
 
         private fun generateUnits(baseUnit: String) = mapOf(
@@ -80,7 +79,6 @@ class PUnit(private val signature: UnitSignature) {
         )
 
         fun convert(unit1: PUnit, unit2: PUnit, initialValue: Double): Double? {
-            println(initialValue, unit1)
             val initialSignature = unit1.signature
             val targetSignature = unit2.signature
             var overallCoefficient = 1.0
@@ -98,7 +96,7 @@ class PUnit(private val signature: UnitSignature) {
 
             for ((unit, exponent) in flattenedInitialSignature) {
                 val correspondingUnitGroup = unitGroups.firstOrNull { unit in it } ?: throw UnitException("Unit '$unit' wasn't declared.")
-                val target = findCompatibleUnitIn(flattenedTargetSignature.keys, unit) ?: return null
+                val target = findCompatibleUnit(unit, exponent, flattenedTargetSignature) ?: return null
                 overallCoefficient *= correspondingUnitGroup.getConvertingCoefficient(unit, target)!!.pow(exponent)
             }
 
@@ -110,8 +108,11 @@ class PUnit(private val signature: UnitSignature) {
             return initialValue * overallCoefficient
         }
 
-        private fun findCompatibleUnitIn(availableUnits: Set<String>, target: String): String? {
-            val matchingUnits = availableUnits.filter { (unitGroups + aliasesGroups).any { g -> it in g && target in g } }
+        private fun findCompatibleUnit(unit: String, exponent: Int, availableUnits: Map<String, Int>): String? {
+            val matchingUnits = availableUnits.filter { (unit2, exponent2) ->
+                exponent == exponent2 && (unitGroups + aliasesGroups).any { grp -> unit in grp && unit2 in grp }
+            }.keys
+
             if (matchingUnits.size > 1) throw UnitException("Units '${matchingUnits.joinToString(", ")} are ambiguous.")
             return matchingUnits.singleOrNull()
         }

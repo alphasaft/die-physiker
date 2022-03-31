@@ -172,6 +172,5 @@ class ComponentClass(
             result = 31 * result + componentClass.hashCode()
             return result
         }
-
     }
 }

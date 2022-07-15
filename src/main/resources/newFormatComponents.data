@@ -12,6 +12,6 @@ class Atome {
 
     behaviors {
         dynamic "myDynamicBehavior"
-        static "myDynamicBehavior" myAction
+        static "myDynamicBehavior" myAction  // Wtf is that ?
     }
 }

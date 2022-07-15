@@ -37,7 +37,6 @@ class FormulaLoader(
 
     override fun generateFrom(ast: Ast): Formula {
         val name = ast["name"]
-        val implicit = ast.getOrNull("implicit") == "yes"
         val specs = generateSpecsFrom(ast.."specs")
         val output = generateOutputFrom(ast.."output")
         val specsHandler = ComponentsPickerWithOutput(specs, output)

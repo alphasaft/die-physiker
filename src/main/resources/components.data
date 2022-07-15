@@ -3,7 +3,7 @@ Le composant abstrait Liquide
         - un volume (Double : L) noté V
 
 
-Le composant Soluté étendant Liquide
+Le composant Soluté
     possède :
         - une masse (Double : g) noté m
         - une masse volumique (Double : g.L-1) noté p

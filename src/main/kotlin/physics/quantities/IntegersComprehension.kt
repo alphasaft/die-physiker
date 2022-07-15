@@ -56,7 +56,7 @@ class IntegersComprehension(
         return this
     }
 
-    override fun stdUnion(quantity: Quantity<PReal>): Quantity<PReal> {
+    override fun simpleUnion(quantity: Quantity<PReal>): Quantity<PReal> {
         return when {
             this intersect quantity == this -> quantity
             this intersect quantity == quantity -> this
@@ -64,7 +64,7 @@ class IntegersComprehension(
         }
     }
 
-    override fun stdIntersect(quantity: Quantity<PReal>): Quantity<PReal> {
+    override fun simpleIntersect(quantity: Quantity<PReal>): Quantity<PReal> {
         return when (quantity) {
             is PRealInterval -> this stdIntersect quantity
             else -> QuantityIntersection.assertReduced(this, quantity)

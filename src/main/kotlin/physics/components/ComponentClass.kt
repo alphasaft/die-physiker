@@ -2,6 +2,7 @@ package physics.components
 
 import physics.*
 import physics.knowledge.Knowledge
+import physics.quantities.AnyQuantity
 import physics.reasoning.Goal
 import physics.reasoning.Reasoning
 import physics.reasoning.Result
@@ -17,15 +18,18 @@ class ComponentClass(
     val name: String,
     val abstract: Boolean = false,
     val structure: ComponentStructure = ComponentStructure(),
-    private val classCustomRepresentation: (Component) -> String = { throw ComponentException("Custom representation method was not implemented for class $name.") }
 ) {
+    companion object {
+        @Suppress("PropertyName")
+        val Any = ComponentClass("Any", abstract = true)
+    }
 
     override fun toString(): String {
         return "component class $name"
     }
 
     infix fun inheritsOf(componentClass: ComponentClass): Boolean {
-        return componentClass == this || componentClass in structure.bases
+        return componentClass == this || componentClass == Any || componentClass in structure.bases
     }
 
     @OptIn(ExperimentalContracts::class)
@@ -53,12 +57,10 @@ class ComponentClass(
             subcomponentGroupsContents.keys.find { name -> structure.subcomponentsGroupsTemplates.none { it.name == name } }
                 ?.also { throw ComponentException("$name(...) doesn't own a subcomponent group named '$it'") }
 
-            val customRepresentation = if (componentName != null) {{ componentName }} else classCustomRepresentation
-            val fields = structure.fieldsTemplates.map { it.newField(fieldValues.getValue(it.name)) }
+            val fields = structure.fieldsTemplates.map { it.newField(fieldValues[it.name] ?: AnyQuantity(it.type), componentName) }
             val subcomponents = structure.subcomponentsGroupsTemplates.map { it.newGroup(subcomponentGroupsContents[it.name] ?: emptyList())}
-            val instance = Instance(customRepresentation, fields, subcomponents)
+            val instance = Instance(componentName, fields, subcomponents)
 
-            fields.forEach { it.owner = instance }
             structure.init(instance)
 
             return instance
@@ -66,9 +68,9 @@ class ComponentClass(
     }
 
     inner class Instance internal constructor(
-        private val customRepresentation: (Instance) -> String,
+        val name: String? = null,
         val fields: List<Field<*>>,
-        val subcomponentsGroups: List<Group>,
+        val boxes: List<ComponentBox>,
     ) {
         val componentClass = this@ComponentClass
         val className = componentClass.name
@@ -81,19 +83,20 @@ class ComponentClass(
             return fields.find { it.name == fieldName } ?: throw ComponentException("$className(...) doesn't own the field '$fieldName'")
         }
 
-        fun getGroup(groupName: String): Group = subcomponentsGroups
+        fun getBox(groupName: String): ComponentBox = boxes
             .find { it.name == groupName }
             ?: throw ComponentException("$className(...) doesn't own a subcomponent group named '$groupName'")
 
-        operator fun contains(subcomponent: Component): Boolean = subcomponentsGroups.any { subcomponent in it }
+        operator fun contains(subcomponent: Component): Boolean = boxes.any { subcomponent in it }
 
-        fun allSubcomponents(): List<Component> =
-            subcomponentsGroups
-                .map { it.content.map { c -> c.allSubcomponents() + c }.flatten() }
-                .flatten()
-        
         infix fun notInstanceOf(componentClass: ComponentClass) = !(this instanceOf componentClass)
         infix fun instanceOf(componentClass: ComponentClass): Boolean = this.componentClass inheritsOf componentClass
+
+        fun allSubcomponents(): List<Component> {
+            return boxes
+                .map { it.content.map { c -> c.allSubcomponents() + c }.flatten() }
+                .flatten()
+        }
 
         fun fillField(
             name: String,
@@ -121,18 +124,9 @@ class ComponentClass(
             ComponentModifier(this).apply(modifier)
         }
 
-        fun isCustomRepresentationAvailable(): Boolean =
-            try {
-                customRepresentation(this)
-                true
-            } catch (e: ComponentException) {
-                false
-            }
+        override fun toString(): String = name ?: fullRepresentation()
 
-        override fun toString(): String =
-            if (isCustomRepresentationAvailable()) customRepresentation(this) else fullRepresentation()
-
-        private fun fullRepresentation(): String {
+        fun fullRepresentation(): String {
             val newline = "\n    "
             val builder = StringBuilder()
 
@@ -143,13 +137,13 @@ class ComponentClass(
                     builder,
                     separator = newline,
                     prefix = newline,
-                    postfix = if (subcomponentsGroups.isEmpty()) "\n" else newline
+                    postfix = if (boxes.isEmpty()) "\n" else newline
                 ) { it.toString() }
             }
 
-            if (subcomponentsGroups.isNotEmpty()) {
+            if (boxes.isNotEmpty()) {
                 builder.append(
-                    subcomponentsGroups.joinToString(
+                    boxes.joinToString(
                         separator = newline,
                         postfix = "\n"
                     ) { it.toString().replace("\n", newline) }
@@ -162,13 +156,12 @@ class ComponentClass(
         }
 
         override fun equals(other: Any?): Boolean {
-            if (other !is Component) return false
-            return other.fields == fields && other.subcomponentsGroups == subcomponentsGroups
+            return other is Component && other.fields == fields && other.boxes == boxes
         }
 
         override fun hashCode(): Int {
             var result = fields.hashCode()
-            result = 31 * result + subcomponentsGroups.hashCode()
+            result = 31 * result + boxes.hashCode()
             result = 31 * result + componentClass.hashCode()
             return result
         }

@@ -2,7 +2,6 @@ package physics.quantities.expressions
 
 import Args
 import physics.quantities.*
-import physics.quantities.doubles.*
 import physics.quantities.Function
 import kotlin.math.*
 import kotlin.reflect.full.primaryConstructor

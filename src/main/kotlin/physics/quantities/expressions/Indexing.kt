@@ -62,7 +62,7 @@ class Indexing(
             is Indexer.Static -> Int.MAX_VALUE
             is Indexer.UseCounter -> if (counter != indexer.counterName) Int.MAX_VALUE else {
                 val series = arguments[seriesName] ?: throw NoSuchElementException("Variable $seriesName wasn't provided.")
-                require(series is VariableValue.Series<*>) { "Expected a series, got a simple value." }
+                require(series is VariableValue.Array<*>) { "Expected a series, got a simple value." }
                 return (series.size - indexer.b)/indexer.a
             }
         }
@@ -75,14 +75,14 @@ class Indexing(
     override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
         val series = arguments[seriesName] ?: throw NoSuchElementException("Variable $seriesName wasn't provided.")
         val counter = indexer.getIndex(counters)
-        require(series is VariableValue.Series) { "Expected a series, got a single value." }
+        require(series is VariableValue.Array) { "Expected a series, got a single value." }
         return series[counter]
     }
 
     override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
         val series = arguments[seriesName] ?: throw NoSuchElementException("Variable $seriesName wasn't provided.")
         val counter = indexer.getIndex(counters)
-        require(series is VariableValue.Series) { "Expected a series, got a single value." }
+        require(series is VariableValue.Array) { "Expected a series, got a single value." }
         return series[counter]
     }
 

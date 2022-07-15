@@ -13,7 +13,7 @@ sealed interface Goal {
         }
 
         override fun toString(): String {
-            return "On cherche ${field.getNotation()}."
+            return "On cherche ${field.representation}."
         }
     }
 }

@@ -18,7 +18,7 @@ abstract class PInterval<T>(
         isUpperBoundClosed: Boolean
     ): Quantity<T>
 
-    override fun stdIntersect(quantity: Quantity<T>): Quantity<T> {
+    override fun simpleIntersect(quantity: Quantity<T>): Quantity<T> {
         return when (quantity) {
             is PInterval<T> -> intersectWithInterval(quantity)
             else -> QuantityIntersection.assertReduced(type, this, quantity)
@@ -46,7 +46,7 @@ abstract class PInterval<T>(
         )
     }
 
-    override fun stdUnion(quantity: Quantity<T>): Quantity<T> {
+    override fun simpleUnion(quantity: Quantity<T>): Quantity<T> {
         return when (quantity) {
             is PInterval<T> -> unionWithInterval(quantity)
             else -> QuantityUnion.assertReduced(type, this, quantity)
@@ -54,7 +54,7 @@ abstract class PInterval<T>(
     }
 
     private fun unionWithInterval(interval: PInterval<T>): Quantity<T> {
-        if (this stdIntersect interval is ImpossibleQuantity<*>) return QuantityUnion.assertReduced(type, this, interval)
+        if (this simpleIntersect interval is ImpossibleQuantity<*>) return QuantityUnion.assertReduced(type, this, interval)
 
         val (lowerInterval, upperInterval) = listOf(this, interval).sortedBy { it.lowerBound }
 

@@ -1,7 +1,5 @@
 package physics.quantities
 
-import physics.quantities.doubles.applyFunction
-
 
 interface Function  {
     val outDomain: Quantity<PReal>

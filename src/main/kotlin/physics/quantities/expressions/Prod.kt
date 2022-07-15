@@ -6,7 +6,7 @@ import filterIsInstanceAndReplace
 import filterOut
 import physics.quantities.Quantity
 import physics.quantities.PReal
-import physics.quantities.doubles.times
+import physics.quantities.times
 
 
 class Prod(factors: List<Expression>) : Expression() {

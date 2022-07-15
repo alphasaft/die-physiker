@@ -33,11 +33,14 @@ class ComponentsPickerWithOutput(
     }
 
     fun findVariableCorrespondingTo(field: Field<*>): String? {
+        TODO("Deprecated, should be replaced soon.")
+        /*
         if (field.name == outputLocation.field && field.owner instanceOf specCorrespondingToOutput.type) return outputVariable
         for (spec in specs.filter { !it.selectAll && field.owner instanceOf it.type }) {
             for ((variable, backingField) in spec.ownedVariables) if (backingField == field.name) return variable
         }
         return null
+        */
     }
 
     fun isolateVariable(variable: String): ComponentsPickerWithOutput {

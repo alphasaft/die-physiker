@@ -1,13 +1,11 @@
 package physics.quantities
 
-import physics.quantities.doubles.plus
-import physics.quantities.doubles.times
 import kotlin.reflect.KClass
 
 class PeriodicalQuantity private constructor(
     interval: PRealInterval,
     private val period: PReal,
-) : Quantity<PReal> {
+) : PRealOperand {
     companion object Factory {
         private class AffineFunction(val a: PReal, val b: PReal) : Function {
             override val outDomain: Quantity<PReal> = AnyQuantity()
@@ -33,13 +31,15 @@ class PeriodicalQuantity private constructor(
     override val type: KClass<PReal> = PReal::class
     private val standardizedInterval: PRealInterval = interval % period
 
-    override fun stdIntersect(quantity: Quantity<PReal>): Quantity<PReal> {
+    override fun simpleIntersect(quantity: Quantity<PReal>): Quantity<PReal> {
         return when (val simplifiedQuantity = quantity.simplify()) {
             is PRealInterval -> this stdIntersect simplifiedQuantity
             is PeriodicalQuantity -> this stdIntersect simplifiedQuantity
             else -> QuantityIntersection.assertReduced(this, simplifiedQuantity)
         }
     }
+
+    // -(-0.3, 0.7, 1.7, ...)
 
     private infix fun stdIntersect(quantity: PRealInterval): Quantity<PReal> {
         val lb = quantity.lowerBound
@@ -52,6 +52,32 @@ class PeriodicalQuantity private constructor(
         return asUnion intersect quantity
     }
 
+    override fun plus(other: PRealOperand): Quantity<PReal> {
+        return new(standardizedInterval + other, period)
+    }
+
+    override fun times(other: PRealOperand): Quantity<PReal> {
+        if (other is PReal) {
+            if (other.isZero()) return other
+            return new(standardizedInterval * other, period*other)
+        }
+        return AnyQuantity()
+
+    }
+
+    override fun pow(other: PRealOperand): Quantity<PReal> {
+        return AnyQuantity()
+    }
+
+    override fun div(other: PRealOperand): Quantity<PReal> {
+        if (other !is PReal) return AnyQuantity()
+        return new(standardizedInterval/other, period/other)
+    }
+
+    override fun unaryMinus(): Quantity<PReal> {
+        return new(-standardizedInterval, period)
+    }
+
     private infix fun stdIntersect(quantity: PeriodicalQuantity): Quantity<PReal> {
         return when {
             (period / quantity.period).isInt() -> new(this.standardizedInterval intersect quantity, period)
@@ -60,7 +86,7 @@ class PeriodicalQuantity private constructor(
         }
     }
 
-    override fun stdUnion(quantity: Quantity<PReal>): Quantity<PReal> {
+    override fun simpleUnion(quantity: Quantity<PReal>): Quantity<PReal> {
         return when {
             quantity includedIn this -> this
             this includedIn quantity -> quantity
@@ -69,9 +95,9 @@ class PeriodicalQuantity private constructor(
     }
 
     override fun contains(value: PReal): Boolean {
-        val centeredValue = value % period
-        val leftCenteredValue = centeredValue - period
-        return centeredValue in standardizedInterval || leftCenteredValue in standardizedInterval
+        val rightCenteredValue = value % period
+        val leftCenteredValue = rightCenteredValue - period
+        return rightCenteredValue in standardizedInterval || leftCenteredValue in standardizedInterval
     }
 
     override fun simplify(): Quantity<PReal> {

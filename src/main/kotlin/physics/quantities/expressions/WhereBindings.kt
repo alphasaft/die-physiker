@@ -12,6 +12,7 @@ class WhereBindings(
     override fun derive(variable: String): Expression {
         val derivative = super.derive(variable)
         val filteredBindings = bindings.filterValues { it in derivative }
-        return WhereBindings(derivative, filteredBindings)
+        val reversedBindings = filteredBindings.map { (v, expr) -> expr to Var(v) }.toMap()
+        return WhereBindings(derivative.substituteAll(reversedBindings), filteredBindings)
     }
 }

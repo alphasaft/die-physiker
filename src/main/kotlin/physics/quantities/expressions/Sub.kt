@@ -3,7 +3,7 @@ package physics.quantities.expressions
 import Args
 import physics.quantities.Quantity
 import physics.quantities.PReal
-import physics.quantities.doubles.minus
+import physics.quantities.minus
 
 class Sub(val left: Expression, val right: Expression) : Expression() {
     override val members: Collection<Expression> = listOf(left, right)

@@ -3,7 +3,7 @@ package physics.quantities.expressions
 import noop
 import physics.quantities.Quantity
 import physics.quantities.PReal
-import physics.quantities.doubles.plus
+import physics.quantities.plus
 import kotlin.reflect.KFunction1
 
 

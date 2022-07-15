@@ -2,7 +2,6 @@ package physics.quantities
 
 import isInt
 import physics.UnitException
-import physics.quantities.doubles.plus
 import physics.quantities.units.PUnit
 import remove
 import kotlin.math.*
@@ -11,13 +10,13 @@ import kotlin.reflect.KClass
 
 class PReal internal constructor(
     exactValue: Double,
-    val significantDigitsCount: Int = Int.MAX_VALUE,
+    private val significantDigitsCount: Int = Int.MAX_VALUE,
     val unit: PUnit = PUnit(),
 ) : PValue<PReal>(), PRealOperand, Comparable<PReal> {
     constructor(value: Int) : this(value.toDouble())
 
     companion object Factory {
-        private val physicalDoubleStringFormatRegex = run {
+        private val pRealStringFormatRegex = run {
             val ws = "\\s*"
             val coefficient = "-?\\d+(.\\d+)?"
             val exponent = "(\\*${ws}10$ws\\^|E)$ws(-?\\d+)"
@@ -26,8 +25,9 @@ class PReal internal constructor(
         }
 
         operator fun invoke(value: String): PReal {
-            val match = physicalDoubleStringFormatRegex.matchEntire(value)
+            val match = pRealStringFormatRegex.matchEntire(value)
                 ?: throw NumberFormatException("Invalid value : $value")
+
             val (coefficient, _, _, _, exponent, unit) = match.destructured
             return PReal(
                 coefficient.toDouble() * 10.0.pow(exponent.ifEmpty { "0" }.toInt()),
@@ -93,7 +93,7 @@ class PReal internal constructor(
     override fun toPReal() = this
     override fun toPString(): PString = PString(value.toString())
 
-    fun toInterval() = PRealInterval.fromPReal(this)
+    private fun toInterval() = PRealInterval.fromPReal(this)
     fun toDouble() = value
     fun toInt() = value.toInt()
 
@@ -223,8 +223,8 @@ class PReal internal constructor(
     }
 
     override fun toString(): String {
-
         val unitDisplay = if (unit.isNeutral()) "" else " $unit"
+        if (value.isInt() && unit.isNeutral()) return value.toInt().toString()
         if (abs(value.scientificNotation().exponent) <= 3) return value.toString() + unitDisplay
         if (value == Double.NEGATIVE_INFINITY) return "-oo$unitDisplay"
         if (value == Double.POSITIVE_INFINITY) return "+oo$unitDisplay"
@@ -251,4 +251,5 @@ class PReal internal constructor(
     fun isNegativeInfinity(): Boolean = value == Double.NEGATIVE_INFINITY
     fun isInfinite(): Boolean = isPositiveInfinity() || isNegativeInfinity()
     fun isFinite(): Boolean = !isInfinite()
+    fun isZero(): Boolean = value == 0.0
 }

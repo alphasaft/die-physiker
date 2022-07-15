@@ -42,7 +42,7 @@ abstract class GenericExpression(
 
             override fun evaluate(arguments: Args<VariableValue<*>>): Int {
                 val series = arguments[seriesName] ?: throw NoSuchElementException("Variable $seriesName wasn't provided")
-                require(series is VariableValue.Series) { "Expected a series, got a single value" }
+                require(series is VariableValue.Array) { "Expected a series, got a single value" }
                 return a*series.size+b
             }
         }

@@ -20,6 +20,8 @@ fun Quantity<*>.asPValue() = requireNotNull(asPValueOrNull()) { "Can't convert $
 
 inline fun <reified V : PValue<V>> Quantity<*>.castAs(): Quantity<V> = castAs(V::class)
 fun <V : PValue<V>> Quantity<*>.castAs(type: KClass<V>): Quantity<V> {
+    if (this is PValue<*>) return useAs(type)
+
     require(this.type == type) { "Can't cast Quantity<${this.type.simpleName}> to Quantity<${type.simpleName}>." }
     return (@Suppress("UNCHECKED_CAST") (this as Quantity<V>))
 }

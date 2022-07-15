@@ -1,7 +1,7 @@
 package physics.components
 
 
-class Group internal constructor(
+class ComponentBox internal constructor(
     val name: String,
     private val minimumSize: Int = 0,
     private val maximumSize: Int = -1,
@@ -51,7 +51,7 @@ class Group internal constructor(
         private val minimumSize: Int = 0,
         private val maximumSize: Int = -1
     ) {
-        fun newGroup(content: List<Component>): Group = Group(
+        fun newGroup(content: List<Component>): ComponentBox = ComponentBox(
             name,
             minimumSize,
             maximumSize,

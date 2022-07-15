@@ -13,9 +13,7 @@ fun alwaysTrue(x: Any?, y: Any?) = true
 
 fun <T> noop(x: T): T = x
 
-fun <T> safe(x: Any?): T {
-    return (@Suppress("UNCHECKED_CAST") (x as T))
-}
+fun <T> safe(x: Any): T = @Suppress("UNCHECKED_CAST") (x as T)
 
 fun binomialCoefficient(k: Int, n: Int): Int {
     return factorial(n) / (factorial(k) * factorial(n-k))

@@ -21,6 +21,8 @@ fun sqrt(x: Expression) = root(x, Const(2))
 
 fun Expression.square() = pow(Const(2))
 fun Expression.pow(other: Expression) = Pow(this, other).simplify()
+fun Expression.where(vararg bindings: Pair<String, Expression>): Expression = WhereBindings(this, bindings.toMap())
+
 infix fun Expression.equal(other: Expression) = Equality(this, other)
 infix fun String.equal(other: Expression) = Equality(Var(this), other)
 

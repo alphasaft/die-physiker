@@ -9,7 +9,7 @@ import isInt
 import physics.quantities.Quantity
 import physics.quantities.asPValue
 import physics.quantities.PReal
-import physics.quantities.doubles.plus
+import physics.quantities.plus
 
 
 class Sum(terms: List<Expression>): Expression() {

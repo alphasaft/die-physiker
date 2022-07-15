@@ -4,7 +4,7 @@ package physics.quantities
 import kotlin.reflect.KClass
 
 
-abstract class PValue<T : PValue<T>> : Quantity<T> {
+sealed class PValue<T : PValue<T>> : Quantity<T> {
     private val that get() = @Suppress("UNCHECKED_CAST") (this as T)
 
     abstract fun toPBoolean(): PBoolean
@@ -25,10 +25,10 @@ abstract class PValue<T : PValue<T>> : Quantity<T> {
 
     override fun contains(value: T): Boolean = value == that
 
-    override fun stdIntersect(quantity: Quantity<T>): Quantity<T> =
+    override fun simpleIntersect(quantity: Quantity<T>): Quantity<T> =
         if (that in quantity) this else ImpossibleQuantity(type)
 
-    override fun stdUnion(quantity: Quantity<T>): Quantity<T> =
+    override fun simpleUnion(quantity: Quantity<T>): Quantity<T> =
         if (that in quantity) quantity else QuantityUnion.assertReduced(type, this, quantity)
 
     override fun simplify(): Quantity<T> =

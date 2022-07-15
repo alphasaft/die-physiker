@@ -12,11 +12,11 @@ import kotlin.reflect.KClass
 
 
 abstract class Expression {
-    abstract val members: Collection<Expression>
     open val complexity get() = members.size
+    abstract val members: Collection<Expression>
+    open val additionalEqualityCheck: (Expression) -> Boolean = { true }
 
     open val outDomain: Quantity<PReal> get() = evaluateExhaustively(allVariables().associateWith<String, VariableValue<Quantity<PReal>>> { VariableValue.Single(AnyQuantity()) })
-    open val additionalEqualityCheck: (Expression) -> Boolean = { true }
 
     private var simplified: Expression? = null
         set(value) {
@@ -24,7 +24,6 @@ abstract class Expression {
             field = value
             value.assertSimplified()
         }
-
 
     protected fun assertSimplified() {
         if (simplified != this) simplified = this
@@ -54,11 +53,11 @@ abstract class Expression {
     }
 
     fun allMembers(): List<Expression> {
-        return members + members.map { it.allMembers() }.flatten()
+        return members + members.flatMap { it.allMembers() }
     }
 
-    fun allVariables(): List<String> {
-        return (allMembers() + this).filterIsInstance<Var>().map { it.name }
+    fun allVariables(): Set<String> {
+        return (allMembers() + this).filterIsInstance<Var>().map { it.name }.toSet()
     }
 
     fun allCounters(): List<String> {
@@ -71,7 +70,7 @@ abstract class Expression {
 
     fun getVariableIsoler(variableName: String): (Expression) -> Expression {
         val variable = Var(variableName)
-        if (members.count { variable == it || variable in it } > 1) throw UnsolvableVariable()
+        if (members.count { variable in it } > 1) throw UnsolvableVariable()
         if (variable in members) return getDirectMemberIsoler(member = members.single { variable == it })
         if (members.count { variable in it } == 0) return ::noop
 

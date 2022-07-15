@@ -3,9 +3,9 @@
 package physics.quantities
 
 import buildArray
-import physics.quantities.doubles.div
-import physics.quantities.doubles.minus
-import physics.quantities.doubles.pow
+import physics.quantities.div
+import physics.quantities.minus
+import physics.quantities.pow
 import physics.quantities.units.PUnit
 import kotlin.math.PI
 
@@ -235,11 +235,11 @@ class PRealInterval private constructor(
 
         return when {
             other.withoutUnit() < PReal(0) -> PReal(1) / (this.pow(-other))
-            other.withoutUnit() == PReal(0) -> PReal(1)
+            other.isZero() -> PReal(1)
             else -> {
                 newUsingBounds(*buildArray {
-                    add(Pair(lowerBound.pow(other), isLowerBoundClosed))
-                    add(Pair(upperBound.pow(other), isUpperBoundClosed))
+                    add(Pair(lowerBound.pow(other), isLowerBoundClosed).also(::println))
+                    add(Pair(upperBound.pow(other), isUpperBoundClosed).also(::println))
                     if (this@PRealInterval.containsZero()) add(Pair(lowerBound.pow(other) * PReal(0), true))
                 })
             }

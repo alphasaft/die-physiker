@@ -2,12 +2,7 @@ package physics.quantities.expressions
 
 import Args
 import isInt
-import physics.quantities.Quantity
-import physics.quantities.PReal
-import physics.quantities.doubles.div
-import physics.quantities.doubles.pow
-import physics.quantities.doubles.unaryMinus
-import physics.quantities.union
+import physics.quantities.*
 
 class Root(private val x: Expression, private val rootExponent: Expression = Const(2)) : Alias(Pow(x, Const(1)/rootExponent)) {
     override fun toString(): String {

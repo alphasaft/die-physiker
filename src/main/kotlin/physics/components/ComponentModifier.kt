@@ -5,7 +5,7 @@ import physics.quantities.PValue
 
 class ComponentModifier(val component: Component) {
 
-    class GroupModifier(private val group: Group) {
+    class BoxModifier internal constructor(private val box: ComponentBox) {
         private val toRemove = mutableListOf<Component>()
         private val toAdd = mutableListOf<Component>()
 
@@ -13,20 +13,20 @@ class ComponentModifier(val component: Component) {
         operator fun Component.unaryPlus() { toAdd.add(this) }
 
         internal fun validate() {
-            toRemove.forEach(group::removeElement)
-            toAdd.forEach(group::addElement)
+            toRemove.forEach(box::removeElement)
+            toAdd.forEach(box::addElement)
         }
     }
 
-    class FieldModifier<T : PValue<T>>(private val field: Field<T>) {
+    class FieldModifier<T : PValue<T>> internal constructor(private val field: Field<T>) {
         operator fun rangeTo(value: T) {
             field.setContent(value)
         }
     }
 
-    fun group(groupName: String, modifier: GroupModifier.() -> Unit) {
-        val modifiedGroup = component.getGroup(groupName)
-        GroupModifier(modifiedGroup).apply(modifier).validate()
+    fun group(groupName: String, modifier: BoxModifier.() -> Unit) {
+        val modifiedGroup = component.getBox(groupName)
+        BoxModifier(modifiedGroup).apply(modifier).validate()
     }
 
     fun field(fieldName: String): FieldModifier<*> {

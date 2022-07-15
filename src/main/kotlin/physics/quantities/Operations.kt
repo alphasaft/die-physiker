@@ -17,7 +17,7 @@ infix fun <V : PValue<V>> Quantity<V>.union(other: Quantity<V>): Quantity<V> {
     return commutativeOperation(
         this,
         other,
-        operation = Quantity<V>::stdUnion,
+        operation = Quantity<V>::simpleUnion,
         reducer = { r1, r2 ->
             when {
                 r1 is ImpossibleQuantity -> r2
@@ -26,14 +26,14 @@ infix fun <V : PValue<V>> Quantity<V>.union(other: Quantity<V>): Quantity<V> {
                 else -> r1
             }
         }
-    ).simplify() // TODO : Recursion here
+    )
 }
 
 infix fun <V : PValue<V>> Quantity<V>.intersect(other: Quantity<V>): Quantity<V> {
     return commutativeOperation(
         this,
         other,
-        operation = Quantity<V>::stdIntersect,
+        operation = Quantity<V>::simpleIntersect,
         reducer = { r1, r2 ->
             when {
                 r1 is AnyQuantity -> r2
@@ -42,7 +42,7 @@ infix fun <V : PValue<V>> Quantity<V>.intersect(other: Quantity<V>): Quantity<V>
                 else -> r1
             }
         }
-    ).simplify() // TODO : Recursion here
+    )
 }
 
 

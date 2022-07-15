@@ -10,7 +10,7 @@ class ExpressionAsFunction(
     private val parameter: String = "x",
 ) : Function {
     init {
-        require(expression.allVariables().all { it == parameter }) { "Expected $parameter as sole argument, or no argument." }
+        require(expression.allVariables().all { it == parameter }) { "Expected $parameter as sole variable, or no variable." }
     }
 
     override val outDomain: Quantity<PReal> get() = expression.outDomain

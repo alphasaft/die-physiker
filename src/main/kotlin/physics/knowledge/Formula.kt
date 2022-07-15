@@ -28,7 +28,6 @@ class Formula(
         fun generateMappersFromEquality(equality: Equality): Map<String, Collector<Quantity<*>>> {
             val mappers = mutableMapOf<String, Collector<Quantity<*>>>()
             for (variable in equality.left.allVariables() + equality.right.allVariables()) {
-                @Suppress("RemoveExplicitTypeArguments")
                 mappers[variable] = { args -> equality.compute(variable, arguments = args.mapValues { (_, v) -> VariableValue.Single(v.castAs<PReal>()) }) }
             }
             return mappers
@@ -65,12 +64,12 @@ class Formula(
         val fields = specs.pickRequiredFields(context, outputOwner)
         val arguments = specs.pickVariablesValues(context, outputOwner)
         val variablesToNotations = fields
-            .mapValues { (_, field) -> field.getNotation() }
+            .mapValues { (_, field) -> field.representation }
             .let { it.mapValues { (variable, notation) -> if (it.values.count { v -> v == notation } > 1) variable else notation } }
 
-        val expression = equality.right
+        val (_, expression) = equality
         val variablesValues = variablesToNotations.toList().joinToString(", ") { (variable, notation) -> "$notation = ${arguments.getValue(variable)}" }
 
-        return (Var(field.getNotation()) equal expression).toFlatString() + ", où " + variablesValues
+        return (Var(field.representation) equal expression).toFlatString() + ", où " + variablesValues
     }
 }

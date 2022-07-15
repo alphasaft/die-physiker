@@ -35,6 +35,11 @@ class Equality(val left: Expression, val right: Expression, ) {
         return Equality(this.left, right.substitute(Var(joiningVariable), equality.right))
     }
 
+
+    fun allVariables(): Set<String> {
+        return left.allVariables() + right.allVariables()
+    }
+
     fun toFlatString(): String {
         return "$left = $right"
     }

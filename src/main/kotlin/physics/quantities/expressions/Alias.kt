@@ -11,9 +11,7 @@ abstract class Alias(val expression: Expression) : Expression() {
     abstract override fun toString(): String
 
     override fun simplifyImpl(): Expression {
-        val simplifiedExpr = expression.simplify()
-        if (simplifiedExpr == expression) return this
-        return simplifiedExpr
+        return expression.simplify()
     }
 
     override fun mayBeDiscontinuousImpl(): Boolean {

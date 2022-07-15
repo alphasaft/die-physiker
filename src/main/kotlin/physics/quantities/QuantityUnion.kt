@@ -33,11 +33,11 @@ open class QuantityUnion<V : PValue<V>> private constructor(
 
     override fun contains(value: V): Boolean = items.any { value in it }
 
-    override fun stdIntersect(quantity: Quantity<V>): Quantity<V> {
-        return new(type, items.map { it stdIntersect quantity })
+    override fun simpleIntersect(quantity: Quantity<V>): Quantity<V> {
+        return new(type, items.map { it simpleIntersect quantity })
     }
 
-    override fun stdUnion(quantity: Quantity<V>): Quantity<V> {
+    override fun simpleUnion(quantity: Quantity<V>): Quantity<V> {
         return new(type, items + quantity)
     }
 

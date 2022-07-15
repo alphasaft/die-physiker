@@ -1,4 +1,3 @@
-import physics.quantities.expressions.Expression
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.pow
@@ -12,6 +11,16 @@ internal fun <T> T.ofWhich(check: T.() -> Boolean): T {
 
 internal fun <T> T.ofWhichOrNull(check: T.() -> Boolean): T? {
     return if (check()) this else null
+}
+
+internal inline fun <reified T : Any> Any?.ensure(): T {
+    require(this is T) { "Expected ${T::class.simpleName}, got $this." }
+    return this
+}
+
+internal fun <T> Any?.assert(): T {
+    @Suppress("UNCHECKED_CAST")
+    return this as T
 }
 
 internal infix fun Boolean.but(other: Boolean) =

@@ -5,7 +5,7 @@ import physics.quantities.ImpossibleQuantity
 import physics.quantities.Quantity
 import physics.quantities.PReal
 import physics.quantities.PRealInterval
-import physics.quantities.doubles.pow
+import physics.quantities.pow
 
 
 class Pow(val x: Expression, val exponent: Expression) : Expression() {
@@ -45,7 +45,7 @@ class Pow(val x: Expression, val exponent: Expression) : Expression() {
     }
 
     override fun mayBeDiscontinuousImpl(): Boolean {
-        if (PRealInterval.Builtin.negative stdIntersect exponent.outDomain != ImpossibleQuantity<PReal>() && PReal(0) in x.outDomain) return true
+        if (PRealInterval.Builtin.negative simpleIntersect exponent.outDomain != ImpossibleQuantity<PReal>() && PReal(0) in x.outDomain) return true
         return x.mayBeDiscontinuous() || exponent.mayBeDiscontinuous()
     }
 

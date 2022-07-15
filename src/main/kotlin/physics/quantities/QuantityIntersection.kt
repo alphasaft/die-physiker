@@ -34,9 +34,9 @@ class QuantityIntersection<V : PValue<V>> private constructor(
 
     override fun contains(value: V): Boolean = items.all { value in it }
 
-    override fun stdIntersect(quantity: Quantity<V>): Quantity<V> = new(type, items + quantity)
+    override fun simpleIntersect(quantity: Quantity<V>): Quantity<V> = new(type, items + quantity)
 
-    override fun stdUnion(quantity: Quantity<V>): Quantity<V> = new(type, items.map { it union quantity })
+    override fun simpleUnion(quantity: Quantity<V>): Quantity<V> = new(type, items.map { it union quantity })
 
     override fun simplify(): Quantity<V> {
         return when {
@@ -56,7 +56,7 @@ class QuantityIntersection<V : PValue<V>> private constructor(
 
         for ((i, x) in items.withIndex()) {
             for (y in items.drop(i+1)) {
-                val intersect = x stdIntersect y
+                val intersect = x simpleIntersect y
                 if (intersect !is QuantityIntersection) return new(type, items - y - x + intersect)
             }
         }

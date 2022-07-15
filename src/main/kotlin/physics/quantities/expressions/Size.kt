@@ -14,13 +14,13 @@ class Size(private val seriesName: String) : Expression() {
 
     override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
         val series = arguments[seriesName] ?: throw NoSuchElementException("Variable $seriesName wasn't provided.")
-        require(series is VariableValue.Series) { "Expected a series, got a single value." }
+        require(series is VariableValue.Array) { "Expected a series, got a single value." }
         return PReal(series.size)
     }
 
     override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
         val series = arguments[seriesName] ?: throw NoSuchElementException("Variable $seriesName wasn't provided.")
-        require(series is VariableValue.Series) { "Expected a series, got a single value." }
+        require(series is VariableValue.Array) { "Expected a series, got a single value." }
         return PReal(series.size)
     }
 

@@ -1,6 +1,5 @@
 package loaders
 
-import noop
 import Mapper
 import Predicate
 import loaders.base.Ast
@@ -8,9 +7,12 @@ import loaders.base.AstNode
 import loaders.base.BaseFunctionsRegister
 import loaders.base.DataLoader
 import physics.components.ComponentClass
-import physics.components.Group
+import physics.components.ComponentBox
 import physics.components.ComponentStructure
 import physics.components.Field
+import physics.quantities.PInt
+import physics.quantities.PReal
+import physics.quantities.PString
 import physics.quantities.PValue
 
 
@@ -59,7 +61,7 @@ class ComponentClassesLoader(
     private fun generateComponentClassFrom(componentClassNode: AstNode): ComponentClass {
         val name = componentClassNode["name"]
         val abstract = componentClassNode.getOrNull("abstract") == "yes"
-        val bases = (componentClassNode.getNodeOrNull("bases")?.allNodes("base-#") ?: emptyList()).map { getClass(it.content!!) }
+        val bases = (componentClassNode.getNodeOrNull("bases")?.allNodes("base-#") ?: emptyList()).map { getClass(it.content!!) }.toSet()
         val fields = componentClassNode.allNodes("field-#").map { generateFieldTemplateFrom(it) }
         val subcomponentGroups = componentClassNode.allNodes("subcomponentGroup-#").map { generateSubcomponentGroupTemplateFrom(it) }
         return ComponentClass(
@@ -76,15 +78,21 @@ class ComponentClassesLoader(
     private fun generateFieldTemplateFrom(fieldNode: AstNode): Field.Template<*> {
         val name = fieldNode["fieldName"]
         val notation = fieldNode.getOrNull("notation") ?: name
-        TODO()
+        val type = when (fieldNode["type"]) {
+            "int", "integer" -> PInt::class
+            "string" -> PString::class
+            "double" -> PReal::class
+            else -> throw NoWhenBranchMatchedException()
+        }
+        return Field.Template(type, name, Field.Template.Notation.UseParenthesis(notation))
     }
 
-    private fun generateSubcomponentGroupTemplateFrom(groupNode: AstNode): Group.Template {
+    private fun generateSubcomponentGroupTemplateFrom(groupNode: AstNode): ComponentBox.Template {
         val name = groupNode["subcomponentGroupName"]
         val type = getClass(groupNode["subcomponentGroupType"])
         val sizeNode = groupNode.."size"
         val minimumSize = sizeNode["min"].toInt()
         val maximumSize = sizeNode["max"].toInt()
-        return Group.Template(name, type, minimumSize, maximumSize)
+        return ComponentBox.Template(name, type, minimumSize, maximumSize)
     }
 }

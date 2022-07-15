@@ -3,7 +3,7 @@ package physics.quantities.expressions
 import Args
 import physics.quantities.Quantity
 import physics.quantities.PReal
-import physics.quantities.doubles.div
+import physics.quantities.div
 
 class Div(val dividend: Expression, val divider: Expression) : Expression() {
     override val members: Collection<Expression> = listOf(dividend, divider)
@@ -19,7 +19,7 @@ class Div(val dividend: Expression, val divider: Expression) : Expression() {
     }
 
     override fun derive(variable: String): Expression {
-        return (dividend.derive(variable) * divider - dividend * divider.derive(variable))/divider.pow(Const(2))
+        return (dividend.derive(variable) * divider - dividend * divider.derive(variable))/divider.square()
     }
 
     override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Map<String, Int>): Quantity<PReal> {
@@ -31,7 +31,7 @@ class Div(val dividend: Expression, val divider: Expression) : Expression() {
     }
 
     override fun mayBeDiscontinuousImpl(): Boolean {
-        return PReal(0) in divider.outDomain
+        return dividend.mayBeDiscontinuous() || PReal(0) in divider.outDomain
     }
 
     override fun simplifyImpl(): Expression {

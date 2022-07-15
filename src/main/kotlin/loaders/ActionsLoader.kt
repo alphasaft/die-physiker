@@ -6,11 +6,10 @@ import loaders.base.DataLoader
 import Args
 import physics.components.Component
 import physics.components.ComponentClass
-import physics.components.ComponentsPicker
-import physics.functions.Action
 import physics.quantities.Quantity
 
 
+/*
 class ActionsLoader(
     loadedComponentClasses: Map<String, ComponentClass>,
     private val functionsRegister: FunctionsRegister
@@ -33,7 +32,9 @@ class ActionsLoader(
         fun getFunctionRegister() = FunctionsRegister()
     }
 
-    override fun generateFrom(ast: Ast): Action {
+
+    override fun generateFrom(ast: Ast): Nothing {
+        /*
         val name = ast["reactionName"]
         val specs = ComponentsPicker((ast.."specs").allNodes("spec-#").map { specLoader.generateFrom(it.toAst()) })
         val action = functionsRegister.getComponentModifier(ast["actionFunctionRef"])
@@ -44,3 +45,5 @@ class ActionsLoader(
         )
     }
 }
+
+ */

@@ -1,61 +1,21 @@
-@file:Suppress("LocalVariableName", "SpellCheckingInspection")
+@file:Suppress("LocalVariableName")
 
 import loaders.ComponentClassesLoader
 import loaders.KnowledgeLoader
 import physics.components.*
-import physics.components.ComponentSpec
-import physics.components.Location
-import physics.components.ComponentsPicker
-import physics.functions.Action
 import physics.quantities.*
 import physics.quantities.PInt
 import physics.quantities.PString
-import physics.quantities.expressions.*
-import physics.quantities.units.PUnit
+import physics.quantities.expressions.div
+import physics.quantities.expressions.equal
+import physics.quantities.expressions.v
+import physics.queries.*
 import java.io.File
 import java.lang.StringBuilder
 import kotlin.math.min
 
 
 fun main() {
-    val interval1 = PRealInterval.raw(
-        isLowerBoundClosed = true,
-        lowerBound = PReal("-1.50 kg"),
-        upperBound = PReal("1.50 kg"),
-        isUpperBoundClosed = false,
-    )
-
-    val interval2 = PRealInterval.raw(
-        isLowerBoundClosed = true,
-        lowerBound = PReal("0 mL2"),
-        upperBound = PReal("100 mL2"),
-        isUpperBoundClosed = true
-    )
-
-    val squaresOnly = IntegersComprehension(
-        integersUnit = PUnit("mL"),
-        inDomain = IntegersComprehension.InDomain.N,
-        function = (c(2) * v("x").square() + c(PReal("2.0 mL2"))).asFunction("x")
-    )
-
-    val periodical1 = PeriodicalQuantity.new(interval1, period = PReal("1000.0 kg")) // Warning bug with CS (like -1.5 + 1000.0 = 999)
-    val periodical2 = PeriodicalQuantity.new(interval2, period = PReal("1000.0 mL2"))
-
-    val n = 12
-    val sum: Expression = GenericSum(
-        underlyingExpression = Counter("i"),
-        counterName = "i",
-        end = GenericExpression.Bound.Static(n)
-    )
-    val sum2: Expression = c(n) * c(n+1) / c(2)
-
-    println(sum)
-    println(sum.evaluate(), sum2.evaluate())
-    println(periodical1)
-}
-
-
-fun main2() {
 
     // TODO : Avoid variables crashes when merging formulas together
 
@@ -96,7 +56,6 @@ fun main2() {
     }
 
     val componentClasses = ComponentClassesLoader(emptyList(), componentClassesFunctionsRegister).loadFrom(File("${cwd()}\\resources\\components.data"))
-    val knowledge = KnowledgeLoader(componentClasses, knowledgeFunctionsRegister).loadFrom(File("${cwd()}\\resources\\formulas.data"))
 
     val Solvant = componentClasses.getValue("Solvant")
     val Solute = componentClasses.getValue("Soluté")
@@ -123,44 +82,33 @@ fun main2() {
         }
     }
 
-    val oxydoreduction = Action(
-        "Oxdoréduction",
-
-        ComponentsPicker(
-            ComponentSpec.single("S", type = Solution, location = Location.Any, variables = emptyMap()),
-            ComponentSpec.single("X", type = Atome, location = Location.At("S.solutés"), variables = mapOf("xSymbol" to "symbole")),
-            ComponentSpec.single("Y", type = Atome, location = Location.At("S.solutés"), variables = mapOf("ySymbol" to "symbole"), condition = condition@ {
-                component, components ->
-                oxydoreductionBetweenTheseExists(
-                    component.getQuantity("symbole").asPValueOrNull()?.toPString() ?: return@condition false,
-                    components.getValue("X").getQuantity("symbole").asPValueOrNull()?.toPString() ?: return@condition false,
-                )
-            })
-        ),
-
-        actionImpl = ::oxydoreductionImpl
-    )
-
-    val solvant = Solvant(componentName = "Sol", fieldValues = mapOf("volume" to PReal("0.70 L")))
-    val solute1 = Solute(fieldValues = mapOf("volume" to PReal("0.20 L"), "masse" to PReal("20 g")))
-    val solute2 = Solute(fieldValues = mapOf("volume" to PReal("0.30 L"), "masse volumique" to PReal("20 g.L-1")))
-    val solute3 = Solute(fieldValues = mapOf("volume" to PReal("0.30 L")))
+    val solvant = Solvant()
+    val solute1 = Solute(fieldValues = mapOf("masse" to PReal("20 g")))
+    val solute2 = Solute(fieldValues = mapOf("masse volumique" to PReal("20 g.L-1")))
+    val solute3 = Solute()
     val solutes = listOf(solute1, solute2, solute3)
-    val solution = Solution(componentName = "S", subcomponentGroupsContents = mapOf("solutés" to solutes, "solvant" to listOf(solvant)))
-    val atome = Atome(fieldValues = mapOf("numéro atomique" to PInt(29)))
+    val solution = Solution(componentName = "S", fieldValues = mapOf("volume" to PReal("3.0 L")), subcomponentGroupsContents = mapOf("solutés" to solutes, "solvant" to listOf(solvant)))
 
-    val quantity = QuantityIntersection.new(setOf(
-        PRealInterval.new(
-            isLowerBoundClosed = true,
-            PReal(33.3),
-            PReal(34.3),
-            isUpperBoundClosed = true
-        ),
-        PRealInterval.new(
-            isLowerBoundClosed = false,
-            PReal(33.3),
-            PReal(37.5),
-            isUpperBoundClosed = false
-        )
-    ))
+    val query1 = Query(
+        SelectBaseComponent("S", Solution),
+        SelectComponent("X", sourceIdentifier = "S", boxName = "solutés"),
+        ExtractField("V", sourceIdentifier = "S", fieldName = "volume"),
+        ExtractField("m", sourceIdentifier = "X", fieldName = "masse"),
+        ExtractField("p", sourceIdentifier = "X", fieldName = "masse volumique")
+    )
+    val formula1 = Formula(v("p") equal v("m")/v("V"))
+    val rule1 = ForEachQueryResult(query1) perform ApplyRelation(formula1)
+    rule1.applyOn(solution)
+
+    val query2 = Query(
+        SelectBaseComponent("S", Solution),
+        SelectComponent("X", sourceIdentifier = "S", boxName = "solvant"),
+        ExtractField("Vs", sourceIdentifier = "S", fieldName = "volume"),
+        ExtractField("Vx", sourceIdentifier = "X", fieldName = "volume"),
+    )
+    val formula2 = Formula(v("Vs") equal v("Vx"))
+    val rule2 = ForEachQueryResult(query2) perform ApplyRelation(formula2)
+    rule2.applyOn(solution)
+
+    println(solution.fullRepresentation())
 }

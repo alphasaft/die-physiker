@@ -2,7 +2,6 @@ package physics.components
 
 import alwaysTrue
 import physics.*
-import physics.quantities.PValue
 import physics.quantities.Quantity
 import java.lang.Exception
 
@@ -120,7 +119,7 @@ class ComponentSpec private constructor(
         alreadySelected: Map<String, Component>,
     ): Pair<String, Component> {
         val selectedOwner = alreadySelected[owner] ?: throw ComponentsPickerException("No component was declared under name '${preciseLocation.alias}'.")
-        val subcomponentsGroup = selectedOwner.getGroup(preciseLocation.field)
+        val subcomponentsGroup = selectedOwner.getBox(preciseLocation.field)
         val selected = subcomponentsGroup.filter { this.matches(it, alreadySelected) }
 
         fun isAlreadySelected(component: Component): Boolean =

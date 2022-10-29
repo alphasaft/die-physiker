@@ -2,22 +2,21 @@ package physics.quantities.expressions
 
 import Args
 import physics.quantities.Quantity
-import physics.quantities.PReal
+import physics.quantities.PDouble
 import physics.quantities.unaryMinus
-import println
 
 class Minus(val value: Expression) : Expression() {
     override val members: Collection<Expression> = listOf(value)
 
     override fun toString(): String {
-        return if (value is Const || value is Var || value is Pow) "-$value" else "-($value)"
+        return if (value is Const || value is Var || value is Pow || value is Prod || value is Div) "-$value" else "-($value)"
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Map<String, Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Map<String, Int>): Quantity<PDouble> {
         return -value.evaluateExhaustively(arguments, counters)
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         return -value.evaluate(arguments, counters)
     }
 

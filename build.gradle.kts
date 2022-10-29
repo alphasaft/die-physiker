@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 
 plugins {
-    kotlin("jvm") version "1.4.32"
+    kotlin("jvm") version "1.7.0"
 }
 
 group = "me.alphasaft"
@@ -24,7 +24,7 @@ tasks.test {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
-    kotlinOptions.apiVersion = "1.5"
-    kotlinOptions.languageVersion = "1.5"
-    kotlinOptions.freeCompilerArgs = listOf("-Xopt-in=kotlin.RequiresOptIn")
+    kotlinOptions.apiVersion = "1.7"
+    kotlinOptions.languageVersion = "1.7"
+    kotlinOptions.freeCompilerArgs = listOf("-opt-in=kotlin.contracts.ExperimentalContracts")
 }

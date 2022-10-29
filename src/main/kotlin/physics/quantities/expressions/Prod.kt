@@ -5,7 +5,7 @@ import UnorderedList
 import filterIsInstanceAndReplace
 import filterOut
 import physics.quantities.Quantity
-import physics.quantities.PReal
+import physics.quantities.PDouble
 import physics.quantities.times
 
 
@@ -15,21 +15,22 @@ class Prod(factors: List<Expression>) : Expression() {
     override val members: Collection<Expression> = UnorderedList(factors)
 
     override fun toString(): String {
+        val members = members.map(Expression::simplify)
         val constants = members.filterIsInstance<Const>()
         val variables = members.filter { it is Var || it is Pow && it.x is Var }
         val sumAndSubs = members.filter { it is Sum || it is Sub }
         val others = members.filterOut(sumAndSubs + constants + variables)
-        val buffer = StringBuffer()
+        val builder = StringBuilder()
 
-        constants.joinTo(buffer, "*")
-        variables.joinTo(buffer, "*")
-        if (sumAndSubs.isNotEmpty()) sumAndSubs.joinTo(buffer, separator = ")(", prefix = "(", postfix = ")")
+        constants.joinTo(builder, "*") { if (it.value.unit.isNeutral()) it.toString() else "($it)" }
+        variables.joinTo(builder, "")
+        if (sumAndSubs.isNotEmpty()) sumAndSubs.joinTo(builder, separator = ")(", prefix = "(", postfix = ")")
         if (others.isNotEmpty()) {
-            if (buffer.toString().isNotBlank()) buffer.append("*")
-            others.joinTo(buffer, separator = "*")
+            if (builder.toString().isNotBlank()) builder.append("*")
+            others.joinTo(builder, separator = "*")
         }
 
-        return buffer.toString()
+        return builder.toString()
     }
 
     override fun getDirectMemberIsoler(member: Expression): (Expression) -> Expression {
@@ -159,11 +160,11 @@ class Prod(factors: List<Expression>) : Expression() {
         }
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
         return members.map { it.evaluateExhaustively(arguments, counters) }.reduce { a, b -> a * b }
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         return members.map { it.evaluate(arguments, counters) }.reduce { a, b -> a * b }
     }
 

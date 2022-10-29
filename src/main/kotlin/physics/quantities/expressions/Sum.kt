@@ -2,13 +2,13 @@ package physics.quantities.expressions
 
 import Args
 import UnorderedList
-import amputatedOf
 import binomialCoefficient
 import filterIsInstanceAndReplace
+import filterOut
 import isInt
 import physics.quantities.Quantity
 import physics.quantities.asPValue
-import physics.quantities.PReal
+import physics.quantities.PDouble
 import physics.quantities.plus
 
 
@@ -41,8 +41,8 @@ class Sum(terms: List<Expression>): Expression() {
             this::addUpConstants,
             this::removeZeros,
             this::addUpLns,
-            this::addUpSimilarMembers,
             this::factoriseWithRemarquableIdentities,
+            this::factorise,
             this::writeAsDifference,
             this::zeroIfEmpty,
         ).fold(members.map { it.simplify() }) { members, f -> f(members) }
@@ -137,16 +137,34 @@ class Sum(terms: List<Expression>): Expression() {
             for (b in filtered - a) {
                 if (a.exponent != b.exponent) continue
                 val previous = result.toList()
-                result = applyIdentityTo(result, a.x, b.x, (a.exponent as Const).value.asPValue().useAs<PReal>().toInt())
+                result = applyIdentityTo(result, a.x, b.x, (a.exponent as Const).value.asPValue().toPValue<PDouble>().toInt())
                 if (previous != result) continue@main
             }
 
             if (constant == null) continue
             val rootOfConst = constant.pow(Const(1) /a.exponent)
-            result = applyIdentityTo(result, a.x, rootOfConst, (a.exponent as Const).value.asPValue().useAs<PReal>().toInt())
+            result = applyIdentityTo(result, a.x, rootOfConst, (a.exponent as Const).value.asPValue().toPValue<PDouble>().toInt())
         }
 
         return addUpSimilarMembers(result)
+    }
+
+    private fun factorise(members: List<Expression>): List<Expression> {
+        val remainingMembers = members.toMutableList()
+        val factorized = mutableListOf<Expression>()
+        for (member in members) {
+            if (member !in remainingMembers) continue
+
+            for (term in (if (member is Prod) member.members else listOf(member))) {
+                fun predicate(m: Expression): Boolean = m == term || m is Minus && predicate(m.value) || m is Prod && term in m.members
+                val compatibleMembers = members.filter(::predicate)
+                if (compatibleMembers.size == 1) continue
+
+                factorized += term * compatibleMembers.map { it / term }.reduce(Expression::plus)
+                remainingMembers -= compatibleMembers
+            }
+        }
+        return factorized + remainingMembers
     }
     
     private fun generateRemarquableIdentity(a: Expression, b: Expression, n: Int): List<Expression> {
@@ -155,10 +173,10 @@ class Sum(terms: List<Expression>): Expression() {
 
     private fun applyIdentityTo(members: List<Expression>, a: Expression, b: Expression, n: Int): List<Expression> {
         val remarquableIdentity = generateRemarquableIdentity(a, b, n)
-        val missingMembers = remarquableIdentity amputatedOf members
+        val missingMembers = remarquableIdentity.filterOut(members)
 
         if (missingMembers.size < remarquableIdentity.size / 2) {
-            return ((members amputatedOf remarquableIdentity)
+            return ((members.filterOut(remarquableIdentity))
                 + missingMembers.map { Minus(it) }
                 + Sum(a, b).pow(Const(n)))
         }
@@ -201,11 +219,11 @@ class Sum(terms: List<Expression>): Expression() {
         return members.ifEmpty { listOf(Const(0)) }
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Map<String, Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Map<String, Int>): Quantity<PDouble> {
         return members.map { it.evaluateExhaustively(arguments, counters) }.reduce { a, b -> a + b }
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         return members.map { it.evaluate(arguments, counters) }.reduce { a, b -> a + b }
     }
 

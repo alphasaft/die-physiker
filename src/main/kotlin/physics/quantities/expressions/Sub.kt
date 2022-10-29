@@ -2,7 +2,7 @@ package physics.quantities.expressions
 
 import Args
 import physics.quantities.Quantity
-import physics.quantities.PReal
+import physics.quantities.PDouble
 import physics.quantities.minus
 
 class Sub(val left: Expression, val right: Expression) : Expression() {
@@ -29,11 +29,11 @@ class Sub(val left: Expression, val right: Expression) : Expression() {
         return left - right
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
         return left.evaluateExhaustively(arguments, counters) - right.evaluateExhaustively(arguments, counters)
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         return left.evaluate(arguments, counters) - right.evaluate(arguments, counters)
     }
 

@@ -7,17 +7,19 @@ import kotlin.reflect.KClass
 sealed class PValue<T : PValue<T>> : Quantity<T> {
     private val that get() = @Suppress("UNCHECKED_CAST") (this as T)
 
+    abstract val value: Any
+
     abstract fun toPBoolean(): PBoolean
     abstract fun toPInt(): PInt
-    abstract fun toPReal(): PReal
+    abstract fun toPReal(): PDouble
     abstract fun toPString(): PString
 
-    inline fun <reified V : PValue<V>> useAs(): V = this.useAs(V::class)
-    fun <V : PValue<V>> useAs(kClass: KClass<V>): V {
+    inline fun <reified V : PValue<V>> toPValue(): V = this.toPValue(V::class)
+    fun <V : PValue<V>> toPValue(kClass: KClass<V>): V {
         return (@Suppress("UNCHECKED_CAST") (when (kClass) {
             PBoolean::class -> toPBoolean()
             PInt::class -> toPInt()
-            PReal::class -> toPReal()
+            PDouble::class -> toPReal()
             PString::class -> toPString()
             else -> throw NoWhenBranchMatchedException("Unexpected cast type ${kClass.simpleName}")
         } as V))

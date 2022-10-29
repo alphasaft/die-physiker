@@ -38,25 +38,25 @@ class IntegersComprehension(
     }
 
     object IdentityFunction : Function {
-        override val outDomain: Quantity<PReal> = AnyQuantity()
+        override val outDomain: Quantity<PDouble> = AnyQuantity()
         override val reciprocal: Function = IdentityFunction
         override fun invoke(x: String): String = x
-        override fun invoke(x: PReal): PReal = x
-        override fun invokeExhaustively(x: Quantity<PReal>): Quantity<PReal> = x
+        override fun invoke(x: PDouble): PDouble = x
+        override fun invokeExhaustively(x: Quantity<PDouble>): Quantity<PDouble> = x
     }
 
-    override val type: KClass<PReal> = PReal::class
+    override val type: KClass<PDouble> = PDouble::class
 
-    override fun contains(value: PReal): Boolean {
+    override fun contains(value: PDouble): Boolean {
         for ((inDomain, f) in functions) if (f.reciprocal(value).convertInto(unit).let { !it.isInt() || it.toInt() !in inDomain }) return false
         return true
     }
 
-    override fun simplify(): Quantity<PReal> {
+    override fun simplify(): Quantity<PDouble> {
         return this
     }
 
-    override fun simpleUnion(quantity: Quantity<PReal>): Quantity<PReal> {
+    override fun simpleUnion(quantity: Quantity<PDouble>): Quantity<PDouble> {
         return when {
             this intersect quantity == this -> quantity
             this intersect quantity == quantity -> this
@@ -64,17 +64,17 @@ class IntegersComprehension(
         }
     }
 
-    override fun simpleIntersect(quantity: Quantity<PReal>): Quantity<PReal> {
+    override fun simpleIntersect(quantity: Quantity<PDouble>): Quantity<PDouble> {
         return when (quantity) {
             is PRealInterval -> this stdIntersect quantity
             else -> QuantityIntersection.assertReduced(this, quantity)
         }
     }
 
-    private infix fun stdIntersect(interval: PRealInterval): Quantity<PReal> {
+    private infix fun stdIntersect(interval: PRealInterval): Quantity<PDouble> {
         val default = QuantityIntersection.assertReduced(this, interval)
         val intervalPullbacks = functions.map { (inDomain, f) -> Triple(inDomain, f, f.reciprocal.invokeExhaustively(interval)) }
-        var result: Quantity<PReal> = AnyQuantity()
+        var result: Quantity<PDouble> = AnyQuantity()
 
         for ((inDomain, f, pullback) in intervalPullbacks) {
             for (pullbackPart in pullback.simplify().let { if (it is QuantityUnion) it.items else listOf(it) }) {
@@ -94,60 +94,60 @@ class IntegersComprehension(
         return IntegersComprehension(unit, functions.map { (inDomain, g) -> inDomain to f.compose(g) }.toSet())
     }
 
-    override fun unaryMinus(): Quantity<PReal> {
-        return composeFunctionsBy((-v("x")).asFunction("x"))
+    override fun unaryMinus(): Quantity<PDouble> {
+        return composeFunctionsBy((-v("x")).toFunction("x"))
     }
 
-    override fun plus(other: PRealOperand): Quantity<PReal> {
+    override fun plus(other: PRealOperand): Quantity<PDouble> {
         return when (other) {
-            is PReal -> this + other
+            is PDouble -> this + other
             is PRealInterval -> AnyQuantity()
             is IntegersComprehension -> AnyQuantity()
             else -> AnyQuantity()
         }
     }
 
-    private operator fun plus(other: PReal): Quantity<PReal> {
-        return composeFunctionsBy((v("x") + c(other)).asFunction("x"))
+    private operator fun plus(other: PDouble): Quantity<PDouble> {
+        return composeFunctionsBy((v("x") + c(other)).toFunction("x"))
     }
 
-    override fun times(other: PRealOperand): Quantity<PReal> {
+    override fun times(other: PRealOperand): Quantity<PDouble> {
         return when (other) {
-            is PReal -> this * other
+            is PDouble -> this * other
             is PRealInterval -> AnyQuantity()
             is IntegersComprehension -> AnyQuantity()
             else -> AnyQuantity()
         }
     }
 
-    private operator fun times(other: PReal): Quantity<PReal> {
-        return composeFunctionsBy((v("x") * c(other)).asFunction("x"))
+    private operator fun times(other: PDouble): Quantity<PDouble> {
+        return composeFunctionsBy((v("x") * c(other)).toFunction("x"))
     }
 
-    override fun div(other: PRealOperand): Quantity<PReal> {
+    override fun div(other: PRealOperand): Quantity<PDouble> {
         return when (other) {
-            is PReal -> this / other
+            is PDouble -> this / other
             is PRealInterval -> AnyQuantity()
             is IntegersComprehension -> AnyQuantity()
             else -> AnyQuantity()
         }
     }
 
-    private operator fun div(other: PReal): Quantity<PReal> {
-        return composeFunctionsBy((v("x") / c(other)).asFunction("x"))
+    private operator fun div(other: PDouble): Quantity<PDouble> {
+        return composeFunctionsBy((v("x") / c(other)).toFunction("x"))
     }
 
-    override fun pow(other: PRealOperand): Quantity<PReal> {
+    override fun pow(other: PRealOperand): Quantity<PDouble> {
         return when (other) {
-            is PReal -> this.pow(other)
+            is PDouble -> this.pow(other)
             is PRealInterval -> AnyQuantity()
             is IntegersComprehension -> AnyQuantity()
             else -> AnyQuantity()
         }
     }
 
-    private fun pow(other: PReal): Quantity<PReal> {
-        return composeFunctionsBy((v("x").pow(c(other)).asFunction("x")))
+    private fun pow(other: PDouble): Quantity<PDouble> {
+        return composeFunctionsBy((v("x").pow(c(other)).toFunction("x")))
     }
 
     override fun toString(): String {

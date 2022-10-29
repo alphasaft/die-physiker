@@ -2,7 +2,7 @@ package physics.quantities.expressions
 
 import Args
 import physics.quantities.Quantity
-import physics.quantities.PReal
+import physics.quantities.PDouble
 
 
 abstract class Alias(val expression: Expression) : Expression() {
@@ -18,11 +18,11 @@ abstract class Alias(val expression: Expression) : Expression() {
         return expression.mayBeDiscontinuous()
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         return expression.evaluate(arguments, counters)
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
         return expression.evaluateExhaustively(arguments, counters)
     }
 

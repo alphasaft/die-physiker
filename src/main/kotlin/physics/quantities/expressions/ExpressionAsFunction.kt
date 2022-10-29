@@ -2,7 +2,7 @@ package physics.quantities.expressions
 
 import physics.quantities.Quantity
 import physics.quantities.Function
-import physics.quantities.PReal
+import physics.quantities.PDouble
 
 
 class ExpressionAsFunction(
@@ -13,18 +13,18 @@ class ExpressionAsFunction(
         require(expression.allVariables().all { it == parameter }) { "Expected $parameter as sole variable, or no variable." }
     }
 
-    override val outDomain: Quantity<PReal> get() = expression.outDomain
-    override val reciprocal: ExpressionAsFunction get() = expression.getVariableIsoler(parameter).invoke(Var("y")).asFunction("y")
+    override val outDomain: Quantity<PDouble> get() = expression.outDomain
+    override val reciprocal: ExpressionAsFunction get() = expression.getVariableIsoler(parameter).invoke(Var("y")).toFunction("y")
 
     override fun invoke(x: String): String {
         return expression.substitute(v(parameter), v(x)).toString()
     }
 
-    override fun invoke(x: PReal): PReal {
+    override fun invoke(x: PDouble): PDouble {
         return expression.evaluate(arguments = mapOf(parameter to VariableValue.Single(x)))
     }
 
-    override fun invokeExhaustively(x: Quantity<PReal>): Quantity<PReal> {
+    override fun invokeExhaustively(x: Quantity<PDouble>): Quantity<PDouble> {
         return expression.evaluateExhaustively(arguments = mapOf(parameter to VariableValue.Single(x)))
     }
 

@@ -3,7 +3,7 @@ package physics.quantities.expressions
 import Args
 import noop
 import physics.quantities.Quantity
-import physics.quantities.PReal
+import physics.quantities.PDouble
 
 class Size(private val seriesName: String) : Expression() {
     override val members: Collection<Expression> = emptyList()
@@ -12,16 +12,16 @@ class Size(private val seriesName: String) : Expression() {
         assertSimplified()
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
         val series = arguments[seriesName] ?: throw NoSuchElementException("Variable $seriesName wasn't provided.")
         require(series is VariableValue.Array) { "Expected a series, got a single value." }
-        return PReal(series.size)
+        return PDouble(series.size)
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         val series = arguments[seriesName] ?: throw NoSuchElementException("Variable $seriesName wasn't provided.")
         require(series is VariableValue.Array) { "Expected a series, got a single value." }
-        return PReal(series.size)
+        return PDouble(series.size)
     }
 
     override fun getDirectMemberIsoler(member: Expression): (Expression) -> Expression {

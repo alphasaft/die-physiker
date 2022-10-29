@@ -3,11 +3,11 @@ package physics.quantities.expressions
 import Args
 import Predicate
 import alwaysTrue
+import assert
 import noop
 import physics.quantities.AnyQuantity
 import physics.quantities.Quantity
-import physics.quantities.PReal
-import safe
+import physics.quantities.PDouble
 import kotlin.reflect.KClass
 
 
@@ -16,7 +16,7 @@ abstract class Expression {
     abstract val members: Collection<Expression>
     open val additionalEqualityCheck: (Expression) -> Boolean = { true }
 
-    open val outDomain: Quantity<PReal> get() = evaluateExhaustively(allVariables().associateWith<String, VariableValue<Quantity<PReal>>> { VariableValue.Single(AnyQuantity()) })
+    open val outDomain: Quantity<PDouble> get() = evaluateExhaustively(allVariables().associateWith<String, VariableValue<Quantity<PDouble>>> { VariableValue.Single(AnyQuantity()) })
 
     private var simplified: Expression? = null
         set(value) {
@@ -44,7 +44,7 @@ abstract class Expression {
     protected abstract fun mayBeDiscontinuousImpl(): Boolean
 
 
-    fun asFunction(parameter: String): ExpressionAsFunction {
+    fun toFunction(parameter: String): ExpressionAsFunction {
         return ExpressionAsFunction(this, parameter)
     }
 
@@ -70,7 +70,7 @@ abstract class Expression {
 
     fun getVariableIsoler(variableName: String): (Expression) -> Expression {
         val variable = Var(variableName)
-        if (members.count { variable in it } > 1) throw UnsolvableVariable()
+        if (members.count { variable in it } > 1) throw UnsolvableVariable(variableName)
         if (variable in members) return getDirectMemberIsoler(member = members.single { variable == it })
         if (members.count { variable in it } == 0) return ::noop
 
@@ -81,7 +81,7 @@ abstract class Expression {
     fun substitute(old: Expression, new: Expression): Expression = substitute<Expression>({ it == old }, { new })
     inline fun <reified T : Expression> substitute(noinline filter: Predicate<T> = ::alwaysTrue, noinline mapper: (T) -> Expression): Expression = substitute(T::class, filter, mapper)
     fun <T : Expression> substitute(eType: KClass<T>, filter: Predicate<T>, mapper: (T) -> Expression): Expression {
-        if (eType.isInstance(this) && filter(safe(this))) return mapper(safe(this))
+        if (eType.isInstance(this) && filter(this.assert<T>())) return mapper(this.assert<T>())
         return withMembers(members.map { it.substitute(eType, filter, mapper) })
     }
 
@@ -96,9 +96,9 @@ abstract class Expression {
 
     abstract fun withMembers(members: List<Expression>): Expression
 
-    abstract fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int> = emptyMap()): Quantity<PReal>
+    abstract fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int> = emptyMap()): Quantity<PDouble>
 
-    abstract fun evaluate(arguments: Args<VariableValue<PReal>> = emptyMap(), counters: Args<Int> = emptyMap()): PReal
+    abstract fun evaluate(arguments: Args<VariableValue<PDouble>> = emptyMap(), counters: Args<Int> = emptyMap()): PDouble
 
     abstract fun derive(variable: String): Expression
 

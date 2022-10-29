@@ -2,7 +2,7 @@ package physics.quantities.expressions
 
 import noop
 import physics.quantities.Quantity
-import physics.quantities.PReal
+import physics.quantities.PDouble
 import physics.quantities.plus
 import kotlin.reflect.KFunction1
 
@@ -23,8 +23,8 @@ class GenericSum(
 
     override val members: Collection<Expression> = listOf(underlyingExpression)
     override val associatedStandardExpressionCtr: KFunction1<List<Expression>, Expression> = ::Sum
-    override val reducer1: (PReal, PReal) -> PReal = PReal::plus
-    override val reducer2: (Quantity<PReal>, Quantity<PReal>) -> Quantity<PReal> = Quantity<PReal>::plus
+    override val reducer1: (PDouble, PDouble) -> PDouble = PDouble::plus
+    override val reducer2: (Quantity<PDouble>, Quantity<PDouble>) -> Quantity<PDouble> = Quantity<PDouble>::plus
 
     override fun getDirectMemberIsoler(member: Expression): (Expression) -> Expression {
         return ::noop

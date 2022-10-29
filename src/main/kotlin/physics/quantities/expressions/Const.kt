@@ -2,12 +2,12 @@ package physics.quantities.expressions
 
 import Args
 import noop
-import physics.quantities.PReal
+import physics.quantities.PDouble
 import physics.quantities.Quantity
 
 
-class Const(val value: PReal) : Expression() {
-    constructor(value: Double): this(PReal(value))
+class Const(val value: PDouble) : Expression() {
+    constructor(value: Double): this(PDouble(value))
     constructor(value: Int): this(value.toDouble())
 
     init {
@@ -20,10 +20,11 @@ class Const(val value: PReal) : Expression() {
     override fun toString(): String {
         val defaultRepr = value.toString()
         if (value.isInt()) return defaultRepr
+        if (!value.unit.isNeutral()) return defaultRepr
 
-        for (i in 1..100) {
-            val numerator = value * PReal(i.toDouble())
-            if (numerator.isInt()) {
+        for (i in listOf(2, 3, 4, 5)) {
+            val numerator = value * PDouble(i.toDouble())
+            if (numerator.isInt() && numerator.withoutUnit() <= PDouble(10)) {
                 val fractionalRepr = "${numerator.toPInt()}/$i"
                 return if (fractionalRepr.length <= defaultRepr.length) fractionalRepr
                 else defaultRepr
@@ -45,11 +46,11 @@ class Const(val value: PReal) : Expression() {
         return ::noop
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         return value
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Map<String, Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Map<String, Int>): Quantity<PDouble> {
         return value
     }
 

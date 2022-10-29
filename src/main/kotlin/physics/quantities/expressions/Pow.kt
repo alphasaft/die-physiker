@@ -1,11 +1,7 @@
 package physics.quantities.expressions
 
 import Args
-import physics.quantities.ImpossibleQuantity
-import physics.quantities.Quantity
-import physics.quantities.PReal
-import physics.quantities.PRealInterval
-import physics.quantities.pow
+import physics.quantities.*
 
 
 class Pow(val x: Expression, val exponent: Expression) : Expression() {
@@ -17,11 +13,11 @@ class Pow(val x: Expression, val exponent: Expression) : Expression() {
         return "$xAsString^$exponentAsString"
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
         return x.evaluateExhaustively(arguments, counters).pow(exponent.evaluateExhaustively(arguments, counters))
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         return x.evaluate(arguments, counters).pow(exponent.evaluate(arguments, counters))
     }
 
@@ -45,7 +41,7 @@ class Pow(val x: Expression, val exponent: Expression) : Expression() {
     }
 
     override fun mayBeDiscontinuousImpl(): Boolean {
-        if (PRealInterval.Builtin.negative simpleIntersect exponent.outDomain != ImpossibleQuantity<PReal>() && PReal(0) in x.outDomain) return true
+        if (PRealInterval.Builtin.negative intersect exponent.outDomain != ImpossibleQuantity<PDouble>() && PDouble(0) in x.outDomain) return true
         return x.mayBeDiscontinuous() || exponent.mayBeDiscontinuous()
     }
 

@@ -9,7 +9,7 @@ import loaders.mpsi.statements.ExternalVariableDeclaration
 import loaders.mpsi.statements.Statement
 import physics.components.ComponentClass
 import physics.quantities.PBoolean
-import physics.quantities.PReal
+import physics.quantities.PDouble
 import physics.quantities.PInt
 import physics.quantities.PString
 
@@ -21,7 +21,7 @@ class ScriptLoader(
     private val builtinTypes = mapOf(
         "Boolean" to PBoolean::class,
         "Int" to PInt::class,
-        "Double" to PReal::class,
+        "Double" to PDouble::class,
         "String" to PString::class,
     )
 
@@ -333,7 +333,7 @@ class ScriptLoader(
             "map" -> generateMap(literalNode)
             "boolean" -> MpsiBuiltinLiteral(PBoolean(nodeContent == "true"))
             "int" -> MpsiBuiltinLiteral(PInt(nodeContent.toInt()))
-            "double" -> MpsiBuiltinLiteral(PReal(nodeContent.toDouble()))
+            "double" -> MpsiBuiltinLiteral(PDouble(nodeContent.toDouble()))
             "string" -> MpsiBuiltinLiteral(PString(nodeContent.trim('\"')))
             "null" -> Null
             else -> throw NoWhenBranchMatchedException()

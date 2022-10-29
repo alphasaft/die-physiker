@@ -1,17 +1,32 @@
+package chemistry
+
+using lettersAndDigitsOnly, lettersOnly from Strings
+using * from Units
+using renderAtomicNumber from ChemistryImpl
+
+predicate isNobleGas on x : Atome := isFull(externalLayer(x))
+
+action break on x : Atome {
+    open x {
+        open group solvant {
+             let s = first()
+        }
+    }
+}
+
 class Atome {
     fields {
-        nom : String<lettersAndDigitsOnly>(trim)
-        symbole : String<lettersOnly>()
-        numéro atomique [Z or renderAtomicNumber(...)] : Double<sPositive>("kg")
+        nom : String<lettersAndDigitsOnly> then trim
+        symbole : String<lettersOnly>
+        numéro atomique [Z or renderAtomicNumber(...)] : Double<isPositive, isL>
     }
 
     groups {
-        solutés : [Solute]
-        solvant : [Solvant] (size == 1)
+        solutés : Solute[]
+        solvant : Solvant[1]
     }
 
-    behaviors {
-        dynamic "myDynamicBehavior"
-        static "myDynamicBehavior" myAction  // Wtf is that ?
+    rules {
+
     }
 }

@@ -57,10 +57,10 @@ class FormulaLoader(
         return outputNode["variableName"] to Location.At(outputNode["location"])
     }
 
-    private fun generateEquality(equalityNode: AstNode, outputVariable: String): Equality {
+    private fun generateEquality(equalityNode: AstNode, outputVariable: String): Equation {
         val left = generateExpression(equalityNode.."left")
         val right = generateExpression(equalityNode.."right")
-        return (left equal right).isolateVariable(outputVariable)
+        return (left equals right).isolateVariable(outputVariable)
     }
 
     private fun generateExpression(expressionNode: AstNode): Expression {

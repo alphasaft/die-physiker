@@ -2,7 +2,7 @@ package physics.quantities.expressions
 
 import Args
 import physics.quantities.Quantity
-import physics.quantities.PReal
+import physics.quantities.PDouble
 import physics.quantities.div
 
 class Div(val dividend: Expression, val divider: Expression) : Expression() {
@@ -22,19 +22,20 @@ class Div(val dividend: Expression, val divider: Expression) : Expression() {
         return (dividend.derive(variable) * divider - dividend * divider.derive(variable))/divider.square()
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Map<String, Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Map<String, Int>): Quantity<PDouble> {
         return dividend.evaluateExhaustively(arguments, counters) / divider.evaluateExhaustively(arguments, counters)
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         return dividend.evaluate(arguments, counters) / divider.evaluate(arguments, counters)
     }
 
     override fun mayBeDiscontinuousImpl(): Boolean {
-        return dividend.mayBeDiscontinuous() || PReal(0) in divider.outDomain
+        return dividend.mayBeDiscontinuous() || PDouble(0) in divider.outDomain
     }
 
     override fun simplifyImpl(): Expression {
+        // TODO : 0/0 is simplified as 1
         val dividend = dividend.simplify()
         val divider = divider.simplify()
 
@@ -49,7 +50,8 @@ class Div(val dividend: Expression, val divider: Expression) : Expression() {
             divider is Exp -> dividend * divider.withNegatedExponent()
             dividend is Log && divider is Log && dividend.base == divider.base -> Log(x = dividend.x, base = divider.x)
             else -> writeAsProduct().simplify()
-        }}
+        }
+    }
 
 
     override fun withMembers(members: List<Expression>): Expression {

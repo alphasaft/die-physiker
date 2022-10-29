@@ -1,13 +1,14 @@
 package physics.components
 
 
-class ComponentBox internal constructor(
+class ComponentBox private constructor(
     val name: String,
     private val minimumSize: Int = 0,
     private val maximumSize: Int = -1,
     private val contentType: ComponentClass,
     content: List<Component> = emptyList()
 ) : AbstractList<Component>() {
+
     private val _content = content.toMutableList()
     val content: List<Component> get() = _content
     override val size: Int = content.size
@@ -26,7 +27,7 @@ class ComponentBox internal constructor(
     }
 
     override fun toString(): String {
-        return if (content.isEmpty()) "$name : NONE" else {
+        return if (content.isEmpty()) "$name : []" else {
             if (maximumSize == 1) "$name : ${content.single()}"
             else "$name : [\n${joinToString(",\n")}".replace("\n", "\n    ") + "\n]"
         }
@@ -51,7 +52,7 @@ class ComponentBox internal constructor(
         private val minimumSize: Int = 0,
         private val maximumSize: Int = -1
     ) {
-        fun newGroup(content: List<Component>): ComponentBox = ComponentBox(
+        fun create(content: List<Component>): ComponentBox = ComponentBox(
             name,
             minimumSize,
             maximumSize,

@@ -11,7 +11,7 @@ import physics.components.ComponentBox
 import physics.components.ComponentStructure
 import physics.components.Field
 import physics.quantities.PInt
-import physics.quantities.PReal
+import physics.quantities.PDouble
 import physics.quantities.PString
 import physics.quantities.PValue
 
@@ -62,37 +62,37 @@ class ComponentClassesLoader(
         val name = componentClassNode["name"]
         val abstract = componentClassNode.getOrNull("abstract") == "yes"
         val bases = (componentClassNode.getNodeOrNull("bases")?.allNodes("base-#") ?: emptyList()).map { getClass(it.content!!) }.toSet()
-        val fields = componentClassNode.allNodes("field-#").map { generateFieldTemplateFrom(it) }
-        val subcomponentGroups = componentClassNode.allNodes("subcomponentGroup-#").map { generateSubcomponentGroupTemplateFrom(it) }
+        val fields = componentClassNode.allNodes("field-#").associate { generateFieldTemplateFrom(it) }
+        val subcomponentGroups = componentClassNode.allNodes("subcomponentGroup-#").associate { generateSubcomponentGroupTemplateFrom(it) }
         return ComponentClass(
             name,
             abstract,
             ComponentStructure(
                 extends = bases,
                 fieldsTemplates = fields,
-                subcomponentsGroupsTemplates = subcomponentGroups,
+                boxesTemplates = subcomponentGroups,
             )
         )
     }
 
-    private fun generateFieldTemplateFrom(fieldNode: AstNode): Field.Template<*> {
+    private fun generateFieldTemplateFrom(fieldNode: AstNode): Pair<String, Field.Template<*>> {
         val name = fieldNode["fieldName"]
         val notation = fieldNode.getOrNull("notation") ?: name
         val type = when (fieldNode["type"]) {
             "int", "integer" -> PInt::class
             "string" -> PString::class
-            "double" -> PReal::class
+            "double" -> PDouble::class
             else -> throw NoWhenBranchMatchedException()
         }
-        return Field.Template(type, name, Field.Template.Notation.UseParenthesis(notation))
+        return Pair(name, Field.Template(type, name, Field.Template.Notation.UseParenthesis(notation)))
     }
 
-    private fun generateSubcomponentGroupTemplateFrom(groupNode: AstNode): ComponentBox.Template {
+    private fun generateSubcomponentGroupTemplateFrom(groupNode: AstNode): Pair<String, ComponentBox.Template> {
         val name = groupNode["subcomponentGroupName"]
         val type = getClass(groupNode["subcomponentGroupType"])
         val sizeNode = groupNode.."size"
         val minimumSize = sizeNode["min"].toInt()
         val maximumSize = sizeNode["max"].toInt()
-        return ComponentBox.Template(name, type, minimumSize, maximumSize)
+        return Pair(name, ComponentBox.Template(name, type, minimumSize, maximumSize))
     }
 }

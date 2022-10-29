@@ -2,7 +2,7 @@ package physics.quantities.expressions
 
 import Args
 import physics.quantities.Quantity
-import physics.quantities.PReal
+import physics.quantities.PDouble
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction1
 
@@ -18,8 +18,8 @@ abstract class GenericExpression(
     override val members: Collection<Expression> = listOf(term)
     protected abstract val associatedStandardExpressionCtr: KFunction1<List<Expression>, Expression>
 
-    protected abstract val reducer1: (PReal, PReal) -> PReal
-    protected abstract val reducer2: (Quantity<PReal>, Quantity<PReal>) -> Quantity<PReal>
+    protected abstract val reducer1: (PDouble, PDouble) -> PDouble
+    protected abstract val reducer2: (Quantity<PDouble>, Quantity<PDouble>) -> Quantity<PDouble>
 
     sealed class Bound {
         abstract fun evaluate(arguments: Args<VariableValue<*>>): Int
@@ -48,8 +48,8 @@ abstract class GenericExpression(
         }
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
-        val collected = mutableListOf<PReal>()
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
+        val collected = mutableListOf<PDouble>()
 
         for (i in start.evaluate(arguments)..end.evaluate(arguments)) {
             collected.add(term.evaluate(arguments, counters + Pair(counterName, i)))
@@ -58,8 +58,8 @@ abstract class GenericExpression(
         return collected.reduce(reducer1)
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
-        val collected = mutableListOf<Quantity<PReal>>()
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
+        val collected = mutableListOf<Quantity<PDouble>>()
 
         for (i in start.evaluate(arguments)..end.evaluate(arguments)) {
             collected.add(term.evaluateExhaustively(arguments, counters + Pair(counterName, i)))

@@ -1,3 +1,4 @@
+import java.lang.IllegalArgumentException
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.pow
@@ -13,11 +14,18 @@ internal fun <T> T.ofWhichOrNull(check: T.() -> Boolean): T? {
     return if (check()) this else null
 }
 
-internal inline fun <reified T : Any> Any?.ensure(): T {
+@PublishedApi
+internal inline fun <reified T> Any?.ensure(): T {
     require(this is T) { "Expected ${T::class.simpleName}, got $this." }
     return this
 }
 
+@PublishedApi
+internal inline fun <reified T : Any> Any?.ensureOrElse(onError: () -> T): T {
+    return if (this is T) this else onError()
+}
+
+@PublishedApi
 internal fun <T> Any?.assert(): T {
     @Suppress("UNCHECKED_CAST")
     return this as T
@@ -44,17 +52,6 @@ internal fun String.titlecase(): String {
 }
 
 internal fun String.remove(s: String): String = replace(s, "")
-
-internal fun String.swap(s1: String, s2: String): String {
-    var i = 0
-    while ("[$i]" in this) {
-        i++
-    }
-    return this
-        .replace(s1, "[$i]")
-        .replace(s2, s1)
-        .replace("[$i]", s2)
-}
 
 
 private val NORMALIZING_MAP = listOf(
@@ -89,15 +86,17 @@ inline fun <T, reified U : T> Iterable<T>.filterIsInstanceAndReplace(replacement
     return unchanged + if (replaced.isNotEmpty()) replacement(replaced) else emptyList()
 }
 
+internal fun <T> Iterable<T>.ifMissing(expected: Collection<T>, callback: (T) -> Any) {
+    val provided = this
+    if (expected.any { it !in provided }) {
+        val missingElement = expected.first { it !in provided }
+        throw IllegalArgumentException(callback(missingElement).toString())
+    }
+}
+
 internal fun <T> Collection<T>.getAllArrangements(): Set<List<T>> {
     return if (isEmpty()) setOf(emptyList())
     else drop(1).getAllArrangements().flatMap { c -> List(size) { i -> c.take(i) + first() + c.drop(i) } }.toSet()
-}
-
-infix fun <E> Collection<E>.amputatedOf(other: Iterable<E>): List<E> {
-    val result = toMutableList()
-    for (item in other) result.remove(item)
-    return result
 }
 
 internal fun <K, V> List<Map<K, V>>.fuseAll(onFailure: (key: K, value1: V, value2: V) -> V): Map<K, V> {
@@ -121,7 +120,7 @@ internal fun <T> MutableList<T>.replace(old: T, new: T) {
     replaceAll { if (it === old) new else it }
 }
 
-internal infix fun <K, V> Map<K, V>.isIncludedIn(container: Map<K, V>): Boolean {
+internal infix fun <K, V> Map<K, V>.includedIn(container: Map<K, V>): Boolean {
     return all { (k, v) -> k in container && container[k] == v }
 }
 

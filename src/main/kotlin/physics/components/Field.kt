@@ -1,14 +1,10 @@
 package physics.components
 
 import Mapper
-import assert
 import noop
-import physics.quantities.AnyQuantity
-import physics.quantities.ImpossibleQuantity
-import physics.quantities.PValue
-import physics.quantities.Quantity
+import physics.components.history.HistoryOwner
+import physics.quantities.*
 import kotlin.reflect.KClass
-
 
 class Field<T : PValue<T>> private constructor(
     @Deprecated("When representing field, should use 'representation'") val name: String,
@@ -16,14 +12,23 @@ class Field<T : PValue<T>> private constructor(
     val representation: String,
     private var content: Quantity<T>,
     private val contentNormalizer: Mapper<Quantity<T>>,
-) {
+) : HistoryOwner() {
+
+    init {
+        if (content !is AnyQuantity)
+            tell("Initialized with value $content.")
+    }
+
+    override fun asHeader(): String = representation
+
     fun getContent() = content
 
     fun setContent(content: Quantity<*>) {
-        require(type == content.type) { "Expected quantity of type ${type.simpleName}, got ${content.type.simpleName}." }
+        val convertedContent = content.toQuantity(type)
+        val newContent = this.content simpleIntersect contentNormalizer(convertedContent)
+        require(newContent !is ImpossibleQuantity<*>) { "Crash : $representation = $content : not compatible with $representation = ${this.content}." }
 
-        val newContent = this.content simpleIntersect contentNormalizer(content.assert<Quantity<T>>())
-        require(newContent !is ImpossibleQuantity<*>) { "Can't set content of field $representation to $content, since it isn't compatible with the current content (${this.content})." }
+        if (newContent != this.content) tell("$representation = $newContent")
 
         this.content = newContent
     }
@@ -32,26 +37,23 @@ class Field<T : PValue<T>> private constructor(
         return "$representation : $content"
     }
 
-    override fun equals(other: Any?): Boolean {
-        return other is Field<*> && other.type == type && other.content == content && other.name == name
+    override fun hashCode(): Int {
+        return super.hashCode() + content.hashCode()
     }
 
-    override fun hashCode(): Int {
-        var result = name.hashCode()
-        result = 31 * result + type.hashCode()
-        result = 31 * result + content.hashCode()
-        return result
+    override fun equals(other: Any?): Boolean {
+        return other === this
     }
 
     class Template<T : PValue<T>>(
         val type: KClass<T>,
         val name: String,
         private val notation: Notation,
-        private val initialQuantity: Quantity<T> = AnyQuantity(type),
+        private val initialContent: Quantity<T> = AnyQuantity(type),
         private val normalizer: (Quantity<T>) -> Quantity<T> = ::noop
     ) {
         @Suppress("unused")
-        sealed class Notation(val default: String, val custom: (String) -> String) {
+        sealed class Notation(internal val default: String, internal val custom: (String) -> String) {
             class Always(notation: String) : Notation(notation, { notation })
             class UseNoEmbedding(notation: String) : Notation(notation, { "$notation$it" })
             class UseParenthesis(notation: String) : Notation(notation, { "$notation($it)" })
@@ -76,9 +78,10 @@ class Field<T : PValue<T>> private constructor(
             )
         }
 
-        internal fun newField(quantity: Quantity<*> = AnyQuantity(type), ownerName: String? = null): Field<T> {
+        internal fun create(content: Quantity<*> = AnyQuantity(type), ownerName: String? = null): Field<T> {
             val representation = if (ownerName == null) notation.default else notation.custom(ownerName)
-            return Field(name, type, representation, initialQuantity, normalizer).apply { setContent(quantity) }
+            val initialContent = content.toQuantity(type) intersect this.initialContent
+            return Field(name, type, representation, initialContent, normalizer).apply { setContent(content) }
         }
     }
 }

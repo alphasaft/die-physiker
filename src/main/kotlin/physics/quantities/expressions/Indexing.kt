@@ -3,7 +3,7 @@ package physics.quantities.expressions
 import Args
 import noop
 import physics.quantities.Quantity
-import physics.quantities.PReal
+import physics.quantities.PDouble
 
 class Indexing(
     private val seriesName: String,
@@ -72,14 +72,14 @@ class Indexing(
         return ::noop
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
         val series = arguments[seriesName] ?: throw NoSuchElementException("Variable $seriesName wasn't provided.")
         val counter = indexer.getIndex(counters)
         require(series is VariableValue.Array) { "Expected a series, got a single value." }
         return series[counter]
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         val series = arguments[seriesName] ?: throw NoSuchElementException("Variable $seriesName wasn't provided.")
         val counter = indexer.getIndex(counters)
         require(series is VariableValue.Array) { "Expected a series, got a single value." }

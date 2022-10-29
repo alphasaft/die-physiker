@@ -3,7 +3,7 @@ package physics.quantities.expressions
 import Args
 import noop
 import physics.quantities.Quantity
-import physics.quantities.PReal
+import physics.quantities.PDouble
 
 class Var(val name: String) : Expression() {
     override val members: Collection<Expression> = emptyList()
@@ -17,13 +17,13 @@ class Var(val name: String) : Expression() {
         return false
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
         val value = arguments[name] ?: throw NoSuchElementException("Variable $name wasn't provided.")
         require(value is VariableValue.Single) { "Expected a single value, got a series." }
         return value.content
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
         val value = arguments[name] ?: throw NoSuchElementException("Variable $name wasn't provided.")
         require(value is VariableValue.Single) { "Expected a single value, got a series." }
         return value.content

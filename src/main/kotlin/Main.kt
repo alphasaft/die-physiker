@@ -1,114 +1,158 @@
 @file:Suppress("LocalVariableName")
 
-import loaders.ComponentClassesLoader
-import loaders.KnowledgeLoader
 import physics.components.*
-import physics.quantities.*
+import physics.packaging.startCompilation
+import physics.quantities.PDouble
 import physics.quantities.PInt
 import physics.quantities.PString
 import physics.quantities.expressions.div
-import physics.quantities.expressions.equal
+import physics.quantities.expressions.equals
 import physics.quantities.expressions.v
-import physics.queries.*
-import java.io.File
-import java.lang.StringBuilder
-import kotlin.math.min
+import physics.rules.*
 
 
 fun main() {
 
-    // TODO : Avoid variables crashes when merging formulas together
+    val compilation = startCompilation()
 
-    val knowledgeFunctionsRegister = KnowledgeLoader.getFunctionsRegister()
-    val componentClassesFunctionsRegister = ComponentClassesLoader.getFunctionsRegister()
-    val scriptFile = File("${cwd()}\\resources\\script.mpsi")
 
-    knowledgeFunctionsRegister.addStandardKnowledgeImplementation("configFromAtomicNumber") { arguments ->
-        var remainingElectrons = (arguments["Z"]!!.asPValueOr(PInt(0)).useAs<PInt>()).value
-        val subshellNames = mapOf(0 to "s", 1 to "p", 2 to "d", 3 to "f")
-        val config = StringBuilder()
 
-        var currentEnergyLevel = 1
-        var shell = 1
-        var subshell = 0
+    compilation.module("base") {
 
-        while (remainingElectrons > 0) {
-            val electronsOnTheSubshell = min(4*subshell + 2, remainingElectrons)
-            remainingElectrons -= electronsOnTheSubshell
+        ("Equation") .. ComponentClass(
+            "Equation",
+            structure = ComponentStructure(
+                fieldsTemplates = mapOf(
+                    "solutions" to Field.Template<PDouble>("solutions", notation = Field.Template.Notation.Always("S"))
+                ),
+                stateEquationsTemplates = mapOf(
+                    "E" to StateEquation.Template("x")
+                )
+            )
+        )
 
-            config.append("($shell${subshellNames[subshell]})$electronsOnTheSubshell")
-            shell++
-            subshell--
 
-            if (subshell < 0) {
-                currentEnergyLevel++
-                shell = currentEnergyLevel / 2 + 1
-                subshell = currentEnergyLevel - shell
-            }
-        }
 
-        PString(config.toString())
+        ("List") .. ComponentClass(
+            "List",
+            structure = ComponentStructure(
+                boxesTemplates = mapOf(
+                    "items" to ComponentBox.Template("items", ComponentClass.Any)
+                )
+            )
+        )
     }
 
-    knowledgeFunctionsRegister.addStandardKnowledgeImplementation("atomicNumberFromConfig") { arguments ->
-        val config = arguments.getValue("config").asPValue().useAs<PString>()
-        PInt(config.split(")").sumOf { it.split("(").first().ifEmpty { "0" }.toInt() })
+
+
+
+    compilation.module("chemistry") {
+
+        useQualified("base")
+
+        val periodicTableOfElements = Database("Tableau Périodique", CsvDatabaseReader("${cwd()}\\resources\\PeriodicTableOfElements.csv"))
+
+        ("Atome") .. ComponentClass(
+            "Atome",
+            structure = ComponentStructure(
+                fieldsTemplates = mapOf(
+                    "nom" to Field.Template<PString>("nom", Field.Template.Notation.Always("nom")),
+                    "numéro atomique" to Field.Template<PInt>("numéro atomique", Field.Template.Notation.Always("Z"))
+                )
+            ),
+            rules = setOf(
+                Query(
+                    NameRootComponent("A"),
+                    ExtractField("AtomicNumber", sourceIdentifier = "A", fieldName = "numéro atomique"),
+                    ExtractField("Element", sourceIdentifier = "A", fieldName = "nom")
+                ).let { ForEachQueryResult(it) perform ApplyRelation(periodicTableOfElements) }
+            )
+        )
+
+        ("Liquide") .. ComponentClass(
+            "Liquide",
+            abstract = true,
+            structure = ComponentStructure(
+                fieldsTemplates = mapOf(
+                    "volume" to Field.Template<PDouble>("volume", Field.Template.Notation.UseUnderscore("V"))
+                )
+            )
+        )
+
+        ("Solute") .. ComponentClass(
+            "Soluté",
+            structure = ComponentStructure(
+                fieldsTemplates = mapOf(
+                    "masse" to Field.Template<PDouble>("masse", Field.Template.Notation.UseUnderscore("m")),
+                    "masse volumique" to Field.Template<PDouble>("masse volumique", Field.Template.Notation.UseParenthesis("p"))
+                )
+            )
+        )
+
+        ("Solvant") .. ComponentClass(
+            "Solvant",
+            structure = ComponentStructure(
+                extends = setOf("Liquide"()),
+                fieldsTemplates = mapOf(
+                    "nom" to Field.Template<PString>("nom", Field.Template.Notation.Always("nom"))
+                )
+            )
+        )
+
+        ("Solution") .. ComponentClass(
+            "Solution",
+            structure = ComponentStructure(
+                extends = setOf("Liquide"()),
+                boxesTemplates = mapOf(
+                    "solutés" to ComponentBox.Template("solutés", "Solute"()),
+                    "solvant" to ComponentBox.Template("solvant", "Solvant"())
+                )
+            ),
+            rules = setOf(
+                Query(
+                    NameRootComponent("S"),
+                    SelectComponent("Sol", sourceIdentifier = "S", boxName = "solvant"),
+                    ExtractField("Vs", sourceIdentifier = "S", fieldName = "volume"),
+                    ExtractField("VSol", sourceIdentifier = "Sol", fieldName = "volume")
+                ).let { ForEachQueryResult(it) perform ApplyRelation(Formula(v("Vs") equals v("VSol"))) },
+                Query(
+                    NameRootComponent("S"),
+                    SelectComponent("X", sourceIdentifier = "S", boxName = "solutés"),
+                    ExtractField("p", sourceIdentifier = "X", fieldName = "masse volumique"),
+                    ExtractField("m", sourceIdentifier = "X", fieldName = "masse"),
+                    ExtractField("V", sourceIdentifier = "S", fieldName = "volume")
+                ).let { ForEachQueryResult(it) perform ApplyRelation(Formula(v("p") equals v("m") / v("V"))) }
+            )
+        )
     }
 
-    val componentClasses = ComponentClassesLoader(emptyList(), componentClassesFunctionsRegister).loadFrom(File("${cwd()}\\resources\\components.data"))
 
-    val Solvant = componentClasses.getValue("Solvant")
-    val Solute = componentClasses.getValue("Soluté")
-    val Solution = componentClasses.getValue("Solution")
-    val Atome = componentClasses.getValue("Atome")
 
-    val myReactions = mapOf(
-        "Cu,H" to "Fe,Ni"
-    )
+    val chemistry = compilation.asModule()
+    val Solute = chemistry["Solute"]
+    val Solvant = chemistry["Solvant"]
+    val Solution = chemistry["Solution"]
+    val Atome = chemistry["Atome"]
 
-    fun oxydoreductionBetweenTheseExists(c1: PString, c2: PString): Boolean = "$c1,$c2" in myReactions
+    val solute1 = Solute("Solu1", fieldValues = mapOf("masse" to PDouble("10 g"), "masse volumique" to PDouble("10.1 g.L-1")))
+    val solute2 = Solute("Solu2", fieldValues = mapOf("masse" to PDouble("5 g")))
+    val solvant = Solvant("Solv", fieldValues = mapOf("nom" to PString("eau")))
+    val s = Solution(
+        "S",
+        fieldValues = mapOf(),
+        boxesContents = mapOf(
+            "solutés" to listOf(solute1, solute2),
+            "solvant" to listOf(solvant),
+        )
+    ).apply { update() }
 
-    fun oxydoreductionImpl(components: Map<String, Component>, arguments: Map<String, Quantity<*>>) {
-        val (xName, yName) = arguments.getValue("xName") to arguments.getValue("yName")
-        val (newX, newY) = myReactions.getValue("$xName,$yName").split(",").let { (p1, p2) -> Atome(fieldValues = mapOf("name" to PString(p1))) to Atome(fieldValues = mapOf("name" to PString(p2))) }
+    val a = Atome(
+        "A",
+        fieldValues = mapOf(
+            "nom" to PString("Hélium"),
+        ),
+    ).apply { update() }
 
-        (components.getValue("S")) {
-            group("solutés") {
-                -components.getValue("X")
-                -components.getValue("Y")
-                +newX
-                +newY
-            }
-        }
-    }
-
-    val solvant = Solvant()
-    val solute1 = Solute(fieldValues = mapOf("masse" to PReal("20 g")))
-    val solute2 = Solute(fieldValues = mapOf("masse volumique" to PReal("20 g.L-1")))
-    val solute3 = Solute()
-    val solutes = listOf(solute1, solute2, solute3)
-    val solution = Solution(componentName = "S", fieldValues = mapOf("volume" to PReal("3.0 L")), subcomponentGroupsContents = mapOf("solutés" to solutes, "solvant" to listOf(solvant)))
-
-    val query1 = Query(
-        SelectBaseComponent("S", Solution),
-        SelectComponent("X", sourceIdentifier = "S", boxName = "solutés"),
-        ExtractField("V", sourceIdentifier = "S", fieldName = "volume"),
-        ExtractField("m", sourceIdentifier = "X", fieldName = "masse"),
-        ExtractField("p", sourceIdentifier = "X", fieldName = "masse volumique")
-    )
-    val formula1 = Formula(v("p") equal v("m")/v("V"))
-    val rule1 = ForEachQueryResult(query1) perform ApplyRelation(formula1)
-    rule1.applyOn(solution)
-
-    val query2 = Query(
-        SelectBaseComponent("S", Solution),
-        SelectComponent("X", sourceIdentifier = "S", boxName = "solvant"),
-        ExtractField("Vs", sourceIdentifier = "S", fieldName = "volume"),
-        ExtractField("Vx", sourceIdentifier = "X", fieldName = "volume"),
-    )
-    val formula2 = Formula(v("Vs") equal v("Vx"))
-    val rule2 = ForEachQueryResult(query2) perform ApplyRelation(formula2)
-    rule2.applyOn(solution)
-
-    println(solution.fullRepresentation())
+    val p = solute2.getField("masse volumique")
+    print(p.toStringWithHistory())
 }

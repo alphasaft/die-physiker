@@ -4,10 +4,10 @@ import Args
 import noop
 import physics.quantities.Quantity
 import physics.quantities.IntegersComprehension
-import physics.quantities.PReal
+import physics.quantities.PDouble
 
 class Counter(val name: String) : Expression() {
-    override val outDomain: Quantity<PReal> = IntegersComprehension(IntegersComprehension.InDomain.Z)
+    override val outDomain: Quantity<PDouble> = IntegersComprehension(IntegersComprehension.InDomain.Z)
     override val members: Collection<Expression> = emptyList()
     override val complexity: Int = 1
 
@@ -19,12 +19,12 @@ class Counter(val name: String) : Expression() {
         return Const(0)
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
-        return PReal((counters[name] ?: throw NoSuchElementException("Counter $name wasn't provided.")).toDouble())
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
+        return PDouble((counters[name] ?: throw NoSuchElementException("Counter $name wasn't provided.")).toDouble())
     }
 
-    override fun evaluate(arguments: Args<VariableValue<PReal>>, counters: Args<Int>): PReal {
-        return PReal((counters[name] ?: throw NoSuchElementException("Counter $name wasn't provided.")).toDouble())
+    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
+        return PDouble((counters[name] ?: throw NoSuchElementException("Counter $name wasn't provided.")).toDouble())
     }
 
     override fun getDirectMemberIsoler(member: Expression): (Expression) -> Expression {

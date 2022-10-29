@@ -9,7 +9,7 @@ import physics.components.ComponentsPickerWithOutput
 import physics.components.Context
 import physics.quantities.PValue
 import physics.quantities.Quantity
-import physics.quantities.castAs
+import physics.quantities.toQuantity
 
 
 open class StandardKnowledge(
@@ -47,7 +47,7 @@ open class StandardKnowledge(
         val fieldOwner = context.findFieldOwner(field)
         try {
             val arguments = specs.pickVariablesValues(context, fieldOwner)
-            return mainMapper(arguments).castAs(field.type)
+            return mainMapper(arguments).toQuantity(field.type)
         } catch (e: ComponentsPickerException) {
             throw InappropriateKnowledgeException(this, field.name, e.message)
         }

@@ -10,8 +10,8 @@ class Root(private val x: Expression, private val rootExponent: Expression = Con
         else "rt<$rootExponent>($x)"
     }
 
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PReal> {
-        val evaluated = x.evaluateExhaustively(arguments).pow(PReal(1.0) / rootExponent.evaluateExhaustively(arguments))
+    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
+        val evaluated = x.evaluateExhaustively(arguments).pow(PDouble(1.0) / rootExponent.evaluateExhaustively(arguments))
         return (
             if (rootExponent is Const && (rootExponent.value.toDouble() / 2.0).isInt()) evaluated union -evaluated
             else evaluated

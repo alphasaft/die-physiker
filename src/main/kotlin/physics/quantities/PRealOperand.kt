@@ -1,40 +1,38 @@
 package physics.quantities
 
-import isInt
 
-
-interface PRealOperand : Quantity<PReal> {
-    operator fun unaryMinus(): Quantity<PReal>
-    operator fun plus(other: PRealOperand): Quantity<PReal>
-    operator fun minus(other: PRealOperand): Quantity<PReal> = this + (-other)
-    operator fun times(other: PRealOperand): Quantity<PReal>
-    operator fun div(other: PRealOperand): Quantity<PReal>
-    fun pow(other: PRealOperand): Quantity<PReal>
+interface PRealOperand : Quantity<PDouble> {
+    operator fun unaryMinus(): Quantity<PDouble>
+    operator fun plus(other: PRealOperand): Quantity<PDouble>
+    operator fun minus(other: PRealOperand): Quantity<PDouble> = this + (-other)
+    operator fun times(other: PRealOperand): Quantity<PDouble>
+    operator fun div(other: PRealOperand): Quantity<PDouble>
+    fun pow(other: PRealOperand): Quantity<PDouble>
 }
 
 
-fun Quantity<PReal>.applyFunction(f: Function): Quantity<PReal> =
+fun Quantity<PDouble>.applyFunction(f: Function): Quantity<PDouble> =
     when (this) {
-        is ImpossibleQuantity<PReal> -> ImpossibleQuantity()
-        is AnyQuantity<PReal> -> f.outDomain
-        is QuantityUnion<PReal> -> QuantityUnion.new(items.map { it.applyFunction(f) })
+        is ImpossibleQuantity<PDouble> -> ImpossibleQuantity()
+        is AnyQuantity<PDouble> -> f.outDomain
+        is QuantityUnion<PDouble> -> QuantityUnion.new(items.map { it.applyFunction(f) })
         is PRealOperand -> f.invokeExhaustively(this)
         else -> f.outDomain
     }
 
 
-private fun Quantity<PReal>.applyOperation(
-    other: Quantity<PReal>,
-    operation: (PRealOperand, PRealOperand) -> Quantity<PReal>,
+private fun Quantity<PDouble>.applyOperation(
+    other: Quantity<PDouble>,
+    operation: (PRealOperand, PRealOperand) -> Quantity<PDouble>,
     commutative: Boolean = false,
-): Quantity<PReal> {
+): Quantity<PDouble> {
     val simplifiedThis = simplify()
     val simplifiedOther = other.simplify()
     return when {
         simplifiedThis is ImpossibleQuantity<*> || simplifiedOther is ImpossibleQuantity<*> -> ImpossibleQuantity()
         simplifiedThis is AnyQuantity<*> || simplifiedOther is AnyQuantity<*> -> AnyQuantity()
-        simplifiedThis is QuantityUnion<PReal> -> simplifiedThis.mapItems { it.applyOperation(simplifiedOther, operation, commutative) }
-        simplifiedOther is QuantityUnion<PReal> -> simplifiedOther.mapItems { simplifiedThis.applyOperation(it, operation, commutative) }
+        simplifiedThis is QuantityUnion<PDouble> -> simplifiedThis.mapItems { it.applyOperation(simplifiedOther, operation, commutative) }
+        simplifiedOther is QuantityUnion<PDouble> -> simplifiedOther.mapItems { simplifiedThis.applyOperation(it, operation, commutative) }
         simplifiedThis is PRealOperand && simplifiedOther is PRealOperand -> operation(simplifiedThis, simplifiedOther).let {
             if (it is AnyQuantity<*> && commutative) simplifiedOther.applyOperation(
                 simplifiedThis,
@@ -45,25 +43,25 @@ private fun Quantity<PReal>.applyOperation(
     }
 }
 
-operator fun Quantity<PReal>.unaryMinus(): Quantity<PReal> = PReal(0.0) - this
+operator fun Quantity<PDouble>.unaryMinus(): Quantity<PDouble> = PDouble(0.0) - this
 
-operator fun Quantity<PReal>.plus(other: Quantity<PReal>): Quantity<PReal> =
+operator fun Quantity<PDouble>.plus(other: Quantity<PDouble>): Quantity<PDouble> =
     applyOperation(other, PRealOperand::plus, commutative = true)
 
-operator fun Quantity<PReal>.minus(other: Quantity<PReal>): Quantity<PReal> =
+operator fun Quantity<PDouble>.minus(other: Quantity<PDouble>): Quantity<PDouble> =
     applyOperation(other, PRealOperand::minus)
 
-operator fun Quantity<PReal>.times(other: Quantity<PReal>): Quantity<PReal> =
+operator fun Quantity<PDouble>.times(other: Quantity<PDouble>): Quantity<PDouble> =
     applyOperation(other, PRealOperand::times, commutative = true)
 
-operator fun Quantity<PReal>.div(other: Quantity<PReal>): Quantity<PReal> =
+operator fun Quantity<PDouble>.div(other: Quantity<PDouble>): Quantity<PDouble> =
     applyOperation(other, PRealOperand::div)
 
-fun Quantity<PReal>.pow(other: Quantity<PReal>): Quantity<PReal> {
+fun Quantity<PDouble>.pow(other: Quantity<PDouble>): Quantity<PDouble> {
     // Special case : If exponent is an even integer, result can only belong to [0;+oo[
-    return applyOperation(other, PRealOperand::pow) intersect (
+    return applyOperation(other, PRealOperand::pow) /*intersect (
             if (other is PReal && (other/PReal(2)).isInt()) PRealInterval.Builtin.positive
             else AnyQuantity()
-    )
+    )*/
 }
 

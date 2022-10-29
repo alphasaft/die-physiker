@@ -4,13 +4,13 @@ import kotlin.reflect.KClass
 
 
 class PInt(
-    val value: Int,
+    override val value: Int,
 ) : PValue<PInt>(), Comparable<PInt> {
     override val type: KClass<PInt> = PInt::class
 
     override fun toPBoolean(): PBoolean = PBoolean(value != 0)
     override fun toPInt(): PInt = this
-    override fun toPReal(): PReal = PReal(value.toDouble())
+    override fun toPReal(): PDouble = PDouble(value.toDouble())
     override fun toPString(): PString = PString(value.toString())
 
     override fun toString(): String {

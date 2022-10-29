@@ -3,20 +3,17 @@
 package physics.quantities
 
 import buildArray
-import physics.quantities.div
-import physics.quantities.minus
-import physics.quantities.pow
 import physics.quantities.units.PUnit
 import kotlin.math.PI
 
 
 class PRealInterval private constructor(
     isLowerBoundClosed: Boolean,
-    lowerBound: PReal,
-    upperBound: PReal,
+    lowerBound: PDouble,
+    upperBound: PDouble,
     isUpperBoundClosed: Boolean
-) : PInterval<PReal>(
-    type = PReal::class,
+) : PInterval<PDouble>(
+    type = PDouble::class,
     isLowerBoundClosed && !lowerBound.isNegativeInfinity(),
     lowerBound,
     upperBound,
@@ -32,19 +29,19 @@ class PRealInterval private constructor(
     companion object Factory {
         fun raw(
             isLowerBoundClosed: Boolean,
-            lowerBound: PReal,
-            upperBound: PReal,
+            lowerBound: PDouble,
+            upperBound: PDouble,
             isUpperBoundClosed: Boolean
         ): PRealInterval = PRealInterval(isLowerBoundClosed, lowerBound, upperBound, isUpperBoundClosed)
 
         fun new(
             isLowerBoundClosed: Boolean,
-            lowerBound: PReal,
-            upperBound: PReal,
+            lowerBound: PDouble,
+            upperBound: PDouble,
             isUpperBoundClosed: Boolean
-        ): Quantity<PReal> = raw(isLowerBoundClosed, lowerBound, upperBound, isUpperBoundClosed).simplify()
+        ): Quantity<PDouble> = raw(isLowerBoundClosed, lowerBound, upperBound, isUpperBoundClosed).simplify()
 
-        fun newUsingBounds(vararg bounds: Pair<PReal, Boolean>): Quantity<PReal> {
+        fun newUsingBounds(vararg bounds: Pair<PDouble, Boolean>): Quantity<PDouble> {
             require(bounds.size >= 2) { "Expected at least two bounds." }
 
             val (lowerBound, isLowerBoundClosed) = bounds.minByOrNull { it.first }!!
@@ -58,7 +55,7 @@ class PRealInterval private constructor(
             )
         }
 
-        fun fromPReal(value: PReal): PRealInterval = PRealInterval(
+        fun fromPReal(value: PDouble): PRealInterval = PRealInterval(
             isLowerBoundClosed = true,
             value,
             value,
@@ -69,8 +66,8 @@ class PRealInterval private constructor(
     object Builtin {
         val positive = PRealInterval(
             isLowerBoundClosed = true,
-            PReal(0.0),
-            PReal(Double.POSITIVE_INFINITY),
+            PDouble(0.0),
+            PDouble(Double.POSITIVE_INFINITY),
             isUpperBoundClosed = false,
         )
 
@@ -78,8 +75,8 @@ class PRealInterval private constructor(
 
         val strictlyPositive = PRealInterval(
             isLowerBoundClosed = false,
-            PReal(0.0),
-            PReal(Double.POSITIVE_INFINITY),
+            PDouble(0.0),
+            PDouble(Double.POSITIVE_INFINITY),
             isUpperBoundClosed = false,
         )
 
@@ -87,23 +84,23 @@ class PRealInterval private constructor(
 
         val fromMinus1To1 = PRealInterval(
             isLowerBoundClosed = true,
-            PReal(-1.0),
-            PReal(1.0),
+            PDouble(-1.0),
+            PDouble(1.0),
             isUpperBoundClosed = true
         )
 
         val fromMinusHalfPiToHalfPi = PRealInterval(
             isLowerBoundClosed = true,
-            PReal(-PI / 2),
-            PReal(PI / 2),
+            PDouble(-PI / 2),
+            PDouble(PI / 2),
             isUpperBoundClosed = true
         )
     }
 
     override fun new(
         isLowerBoundClosed: Boolean,
-        lowerBound: PReal,
-        upperBound: PReal,
+        lowerBound: PDouble,
+        upperBound: PDouble,
         isUpperBoundClosed: Boolean
     ) = Factory.new(
         isLowerBoundClosed,
@@ -116,14 +113,14 @@ class PRealInterval private constructor(
     val amplitude = upperBound - lowerBound
 
     private fun strictlyNegativePart() =
-        coerceUpperBound(PReal(0.0, Int.MAX_VALUE, unit = upperBound.unit), closed = false)
+        coerceUpperBound(PDouble(0.0, Int.MAX_VALUE, unit = upperBound.unit), closed = false)
 
-    private fun positivePart() = coerceLowerBound(PReal(0.0, Int.MAX_VALUE, unit = lowerBound.unit), closed = true)
+    private fun positivePart() = coerceLowerBound(PDouble(0.0, Int.MAX_VALUE, unit = lowerBound.unit), closed = true)
 
     fun hasFiniteAmplitude() = amplitude.isFinite()
     fun hasInfiniteAmplitude() = !hasFiniteAmplitude()
 
-    fun containsZero() = PReal(0.0, Int.MAX_VALUE, unit = lowerBound.unit) in this
+    fun containsZero() = PDouble(0.0, Int.MAX_VALUE, unit = lowerBound.unit) in this
     fun hasStrictlyNegativePart() = strictlyNegativePart() !is ImpossibleQuantity
     fun hasPositivePart() = positivePart() !is ImpossibleQuantity
 
@@ -134,74 +131,74 @@ class PRealInterval private constructor(
         isUpperBoundClosed
     )
 
-    fun integersOnly(unit: PUnit): Iterable<PReal> {
+    fun integersOnly(unit: PUnit): Iterable<PDouble> {
         val first = lowerBound.convertInto(unit)
-            .let { (if (it.isInt() && isLowerBoundClosed) it else it + PReal(1.0, unit = unit)).floor() }
+            .let { (if (it.isInt() && isLowerBoundClosed) it else it + PDouble(1.0, unit = unit)).floor() }
 
-        return object : Iterable<PReal> {
-            override fun iterator() = object : Iterator<PReal> {
+        return object : Iterable<PDouble> {
+            override fun iterator() = object : Iterator<PDouble> {
                 private var current = first
 
                 override fun hasNext(): Boolean = current in this@PRealInterval
-                override fun next(): PReal = current.also { current += PReal(1.0, unit = unit) }
+                override fun next(): PDouble = current.also { current += PDouble(1.0, unit = unit) }
             }
         }
     }
 
-    override fun unaryMinus(): Quantity<PReal> = new(
+    override fun unaryMinus(): Quantity<PDouble> = new(
         isUpperBoundClosed,
         -upperBound,
         -lowerBound,
         isLowerBoundClosed,
     )
 
-    override fun plus(other: PRealOperand): Quantity<PReal> = when (other) {
-        is PReal -> this + other
+    override fun plus(other: PRealOperand): Quantity<PDouble> = when (other) {
+        is PDouble -> this + other
         is PRealInterval -> this + other
         else -> AnyQuantity()
     }
 
-    private operator fun plus(other: PReal): Quantity<PReal> = new(
+    private operator fun plus(other: PDouble): Quantity<PDouble> = new(
         isLowerBoundClosed,
         lowerBound + other,
         upperBound + other,
         isUpperBoundClosed,
     )
 
-    private operator fun plus(other: PRealInterval): Quantity<PReal> = new(
+    private operator fun plus(other: PRealInterval): Quantity<PDouble> = new(
         isLowerBoundClosed && other.isLowerBoundClosed,
         lowerBound + other.lowerBound,
         upperBound + other.upperBound,
         isUpperBoundClosed && other.isUpperBoundClosed,
     )
 
-    override fun times(other: PRealOperand): Quantity<PReal> = when (other) {
-        is PReal -> this * other
+    override fun times(other: PRealOperand): Quantity<PDouble> = when (other) {
+        is PDouble -> this * other
         is PRealInterval -> this * other
         else -> AnyQuantity()
     }
 
-    private operator fun times(other: PReal): Quantity<PReal> = newUsingBounds(
+    private operator fun times(other: PDouble): Quantity<PDouble> = newUsingBounds(
         Pair(lowerBound * other, isLowerBoundClosed),
         Pair(upperBound * other, isUpperBoundClosed),
     )
 
-    private operator fun times(other: PRealInterval): Quantity<PReal> = newUsingBounds(
+    private operator fun times(other: PRealInterval): Quantity<PDouble> = newUsingBounds(
         Pair(lowerBound * other.lowerBound, isLowerBoundClosed && other.isLowerBoundClosed),
         Pair(lowerBound * other.upperBound, isLowerBoundClosed && other.isUpperBoundClosed),
         Pair(upperBound * other.lowerBound, isUpperBoundClosed && other.isLowerBoundClosed),
         Pair(upperBound * other.upperBound, isUpperBoundClosed && other.isUpperBoundClosed),
     )
 
-    override fun div(other: PRealOperand): Quantity<PReal> = when (other) {
-        is PReal -> this / other
+    override fun div(other: PRealOperand): Quantity<PDouble> = when (other) {
+        is PDouble -> this / other
         is PRealInterval -> this / other
         else -> AnyQuantity()
     }
 
-    private operator fun div(other: PReal): Quantity<PReal> = this * (PReal(1.0) / other)
+    private operator fun div(other: PDouble): Quantity<PDouble> = this * (PDouble(1.0) / other)
 
-    private operator fun div(other: PRealInterval): Quantity<PReal> {
+    private operator fun div(other: PRealInterval): Quantity<PDouble> {
         val positive = other.positivePart()
         val negative = other.strictlyNegativePart()
         val dividedByPositivePart = divideByQuantityThatIncludes0OnlyAsBound(positive)
@@ -209,45 +206,45 @@ class PRealInterval private constructor(
         return dividedByNegativePart union dividedByPositivePart
     }
 
-    private fun divideByQuantityThatIncludes0OnlyAsBound(quantity: Quantity<PReal>): Quantity<PReal> {
+    private fun divideByQuantityThatIncludes0OnlyAsBound(quantity: Quantity<PDouble>): Quantity<PDouble> {
         return when (quantity) {
-            is ImpossibleQuantity<PReal> -> ImpossibleQuantity()
-            is PInterval<PReal> -> this * PRealInterval(
+            is ImpossibleQuantity<PDouble> -> ImpossibleQuantity()
+            is PInterval<PDouble> -> this * PRealInterval(
                 isLowerBoundClosed = quantity.isUpperBoundClosed,
-                lowerBound = (PReal(1.0) / quantity.upperBound).let { if (it.isPositiveInfinity()) -it else it },
-                upperBound = (PReal(1.0) / quantity.lowerBound).let { if (it.isNegativeInfinity()) -it else it },
+                lowerBound = (PDouble(1.0) / quantity.upperBound).let { if (it.isPositiveInfinity()) -it else it },
+                upperBound = (PDouble(1.0) / quantity.lowerBound).let { if (it.isNegativeInfinity()) -it else it },
                 isUpperBoundClosed = quantity.isLowerBoundClosed
             )
             else -> this / quantity
         }
     }
 
-    override fun pow(other: PRealOperand): Quantity<PReal> {
+    override fun pow(other: PRealOperand): Quantity<PDouble> {
         return when (other) {
-            is PReal -> this.pow(other)
+            is PDouble -> this.pow(other)
             is PRealInterval -> AnyQuantity()
             else -> AnyQuantity()
         }
     }
 
-    private fun pow(other: PReal): Quantity<PReal> {
-        if (other < PReal(1) && strictlyNegativePart() !is ImpossibleQuantity) return positivePart().pow(other)
+    private fun pow(other: PDouble): Quantity<PDouble> {
+        if (other < PDouble(1) && strictlyNegativePart() !is ImpossibleQuantity) return positivePart().pow(other)
 
         return when {
-            other.withoutUnit() < PReal(0) -> PReal(1) / (this.pow(-other))
-            other.isZero() -> PReal(1)
+            other.withoutUnit() < PDouble(0) -> PDouble(1) / (this.pow(-other))
+            other.isZero() -> PDouble(1)
             else -> {
                 newUsingBounds(*buildArray {
-                    add(Pair(lowerBound.pow(other), isLowerBoundClosed).also(::println))
-                    add(Pair(upperBound.pow(other), isUpperBoundClosed).also(::println))
-                    if (this@PRealInterval.containsZero()) add(Pair(lowerBound.pow(other) * PReal(0), true))
+                    add(Pair(lowerBound.pow(other), isLowerBoundClosed))
+                    add(Pair(upperBound.pow(other), isUpperBoundClosed))
+                    if (this@PRealInterval.containsZero()) add(Pair(lowerBound.pow(other) * PDouble(0), true))
                 })
             }
         }
     }
 
-    operator fun rem(period: PReal): PRealInterval {
-        val one = PReal(1).withUnit(period.unit)
+    operator fun rem(period: PDouble): PRealInterval {
+        val one = PDouble(1).withUnit(period.unit)
         return PRealInterval(
             isLowerBoundClosed,
             lowerBound % period,
@@ -256,9 +253,9 @@ class PRealInterval private constructor(
         )
     }
 
-    private operator fun ((Double) -> Double).invoke(x: PReal) = x.applyFunction(this)
+    private operator fun ((Double) -> Double).invoke(x: PDouble) = x.applyFunction(this)
 
-    fun applyMonotonousFunction(f: (Double) -> Double): Quantity<PReal> {
+    fun applyMonotonousFunction(f: (Double) -> Double): Quantity<PDouble> {
         return newUsingBounds(
             f(lowerBound) to isLowerBoundClosed,
             f(upperBound) to isUpperBoundClosed
@@ -267,20 +264,20 @@ class PRealInterval private constructor(
 
     fun applyPeriodicalFunction(
         f: (Double) -> Double,
-        t: PReal,
-        extremasOnIntervalFrom0ToT: Map<PReal, PReal>
-    ): Quantity<PReal> {
+        t: PDouble,
+        extremasOnIntervalFrom0ToT: Map<PDouble, PDouble>
+    ): Quantity<PDouble> {
         val withOffsetRemoved = this % t
         val withSizeReducedToTAtMost = withOffsetRemoved.coerceUpperBound(withOffsetRemoved.lowerBound + t, closed = false) as PInterval
         val intervalToT = withSizeReducedToTAtMost.coerceUpperBound(t, closed = true)
         val intervalFrom0 = withSizeReducedToTAtMost.coerceLowerBound(t, closed = true) - t
         val completeInterval = intervalFrom0 union intervalToT
 
-        val bounds = mutableSetOf<Pair<PReal, Boolean>>()
+        val bounds = mutableSetOf<Pair<PDouble, Boolean>>()
 
-        fun addBounds(q: Quantity<PReal>) {
+        fun addBounds(q: Quantity<PDouble>) {
             when (q) {
-                is PReal -> bounds.add(Pair(f(q), true))
+                is PDouble -> bounds.add(Pair(f(q), true))
                 is PRealInterval -> {
                     bounds.add(Pair(f(q.lowerBound), q.isLowerBoundClosed))
                     bounds.add(Pair(f(q.upperBound), q.isUpperBoundClosed))

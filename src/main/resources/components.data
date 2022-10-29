@@ -1,3 +1,7 @@
+abstract model Liquid {
+    volume: L as V(_)
+}
+
 Le composant abstrait Liquide
     possède :
         - un volume (Double : L) noté V

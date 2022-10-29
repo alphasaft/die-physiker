@@ -67,4 +67,9 @@ class QuantityIntersection<V : PValue<V>> private constructor(
     fun mapItems(mapper: (Quantity<V>) -> Quantity<V>): Quantity<V> {
         return new(type, items.map(mapper))
     }
+
+    inline fun <reified U : PValue<U>> mapItemsWithNewType(noinline mapper: (Quantity<V>) -> Quantity<U>) = mapItemsWithNewType(U::class, mapper)
+    fun <U : PValue<U>> mapItemsWithNewType(type: KClass<U>, mapper: (Quantity<V>) -> Quantity<U>): Quantity<U> {
+        return new(type, items.map(mapper))
+    }
 }

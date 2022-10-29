@@ -3,7 +3,7 @@ package physics.quantities
 import kotlin.reflect.KClass
 
 
-class PBoolean(val value: Boolean) : PValue<PBoolean>() {
+class PBoolean(override val value: Boolean) : PValue<PBoolean>() {
     override val type: KClass<PBoolean> = PBoolean::class
 
     override fun toString(): String {
@@ -20,7 +20,7 @@ class PBoolean(val value: Boolean) : PValue<PBoolean>() {
 
     override fun toPBoolean(): PBoolean = this
     override fun toPInt(): PInt = PInt(if (value) 1 else 0)
-    override fun toPReal(): PReal = PReal(if (value) 1.0 else 0.0)
+    override fun toPReal(): PDouble = PDouble(if (value) 1.0 else 0.0)
     override fun toPString(): PString = PString(value.toString())
 
     fun not(): PBoolean {

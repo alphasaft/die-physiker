@@ -1,11 +1,11 @@
 package physics.quantities.expressions
 
-import physics.quantities.PReal
+import physics.quantities.PDouble
 
 fun v(name: String): Var = Var(name)
 fun c(value: Int): Const = Const(value)
 fun c(value: Double): Const = Const(value)
-fun c(value: PReal): Const = Const(value)
+fun c(value: PDouble): Const = Const(value)
 
 operator fun Expression.plus(other: Expression) = Sum(this, other).simplify()
 operator fun Expression.minus(other: Expression) = Sub(this, other).simplify()
@@ -23,6 +23,6 @@ fun Expression.square() = pow(Const(2))
 fun Expression.pow(other: Expression) = Pow(this, other).simplify()
 fun Expression.where(vararg bindings: Pair<String, Expression>): Expression = WhereBindings(this, bindings.toMap())
 
-infix fun Expression.equal(other: Expression) = Equality(this, other)
-infix fun String.equal(other: Expression) = Equality(Var(this), other)
+infix fun Expression.equals(other: Expression) = Equation(this.simplify(), other.simplify())
+infix fun String.equals(other: Expression) = Equation(Var(this), other)
 

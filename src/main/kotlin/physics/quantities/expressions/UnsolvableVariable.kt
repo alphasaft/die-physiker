@@ -1,3 +1,3 @@
 package physics.quantities.expressions
 
-class UnsolvableVariable : Exception()
+class UnsolvableVariable(variable: String) : Exception("Variable $variable can't be isolated.")

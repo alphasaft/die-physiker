@@ -4,8 +4,6 @@ import physics.quantities.PValue
 
 
 class Context(components: List<Component>) {
-    constructor(vararg components: Component): this(components.toList())
-
     private val components = components.toMutableList()
 
     fun allComponents(): List<Component> {
@@ -13,7 +11,7 @@ class Context(components: List<Component>) {
     }
 
     fun findComponentOwner(component: Component): Component? {
-        return allComponents().singleOrNull { it.boxes.flatten().any { c -> c === component } }
+        return allComponents().singleOrNull { it.boxes.values.flatten().any { c -> c === component } }
     }
 
     fun <T : PValue<T>> findFieldOwner(field: Field<T>): Component {

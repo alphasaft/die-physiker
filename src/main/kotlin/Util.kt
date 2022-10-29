@@ -3,6 +3,16 @@ fun println(vararg args: Any?, separator: String = " ") {
     kotlin.io.println(args.joinToString(separator))
 }
 
+
+fun <T> buildList(initializer: MutableList<T>.() -> Unit): List<T> {
+    return kotlin.collections.buildList(initializer)
+}
+
+inline fun <reified T> buildArray(initializer: MutableList<T>.() -> Unit): Array<T> {
+    return kotlin.collections.buildList(initializer).toTypedArray()
+}
+
+
 fun cwd(): String = System.getProperty("user.dir") + "\\src\\main"
 
 @Suppress("UNUSED_PARAMETER")
@@ -12,8 +22,6 @@ fun alwaysTrue(x: Any?) = true
 fun alwaysTrue(x: Any?, y: Any?) = true
 
 fun <T> noop(x: T): T = x
-
-fun <T> safe(x: Any): T = @Suppress("UNCHECKED_CAST") (x as T)
 
 fun binomialCoefficient(k: Int, n: Int): Int {
     return factorial(n) / (factorial(k) * factorial(n-k))

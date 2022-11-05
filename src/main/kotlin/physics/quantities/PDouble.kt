@@ -11,11 +11,12 @@ import kotlin.reflect.KClass
 class PDouble internal constructor(
     exactValue: Double,
     private val significantDigitsCount: Int = Int.MAX_VALUE,
-    val unit: PUnit = PUnit(),
-) : PValue<PDouble>(), PRealOperand, Comparable<PDouble> {
+    override val unit: PUnit = PUnit(),
+) : PValue<PDouble>(), PDoubleOperand, Comparable<PDouble> {
     constructor(value: Int) : this(value.toDouble())
 
     companion object Factory {
+        private val specials = listOf(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY)
         private val pRealStringFormatRegex = run {
             val ws = "\\s*"
             val coefficient = "-?\\d+(.\\d+)?"
@@ -40,7 +41,7 @@ class PDouble internal constructor(
     override val type: KClass<PDouble> = PDouble::class
 
     init {
-        if (exactValue.isNaN()) throw IllegalArgumentException("Can't init PReal(NaN).")
+        if (exactValue.isNaN()) throw IllegalArgumentException("Double.NaN has no physical signification and thus PDouble(NaN) is forbidden.")
     }
 
     private val lastAccurateDigit = -significantDigitsCount + exactValue.scientificNotation().exponent + 1
@@ -54,7 +55,7 @@ class PDouble internal constructor(
     )
 
     private fun Double.scientificNotation(): ScientificNotation {
-        if (this == 0.0) return ScientificNotation(0.0, exponent = 0)
+        if (this in specials + 0.0) return ScientificNotation(this, exponent = 0)
 
         val exponent = floor(log(abs(this), base = 10.0).suppressDwindlingDigits()).toInt()
         return ScientificNotation(
@@ -64,42 +65,41 @@ class PDouble internal constructor(
     }
 
     private fun Double.roundedAt(n: Int): Double {
+        if (this in specials) return this
+
         val rounded = (this * 10.0.pow(-n)).roundToInt().toDouble()
         return (rounded * 10.0.pow(n)).suppressDwindlingDigits()
     }
 
     private fun Double.suppressDwindlingDigits(): Double {
-        var asString = toString()
+        if (this in specials) return this
 
+        val asString = toString()
+        val lastDigit = asString.last().digitToInt()
         if (asString.split(".").last().length < 10) return this
 
-        val splitOnE = asString.split("E")
-        if (splitOnE.size > 1) {
-            val (coefficient, exponent) = splitOnE.first() to splitOnE.last().toInt()
-            asString = if (exponent < 0) {
-                (if (asString.first() == '-') "-" else "") + ("0." + "0".repeat(-exponent - 1) + coefficient.remove("-")
-                    .remove(".")).removeSuffix("0")
-            } else {
-                coefficient.remove(".") + "0".repeat(exponent - 1)
-            }
+        if ("E" in asString || "e" in asString) {
+            val (coefficient, exp) = asString.lowercase().split("e")
+            return (coefficient.toDouble().suppressDwindlingDigits().toString() + "E" + exp).toDouble()
         }
 
-        return (
-                if (asString.last().digitToInt() < 5)
-                    asString
-                        .dropLast(1)
-                        .dropLastWhile { it in "0" }
-                        .toDouble()
-                else
-                    asString
-                        .dropLast(1)
-                        .dropLastWhile { it in "9" }
-                        .let { it.trimEnd('.').dropLast(1) + (it.trimEnd('.').last().digitToInt() + 1) }
-                        .toDouble()
-        )
+        if (asString.startsWith("-")) {
+            return -(-this).suppressDwindlingDigits()
+        }
+
+        val toReplaceInTail: String = if (lastDigit >= 5) "9" else "0"
+        val replacementToLastDigit: (Int) -> Int = if (lastDigit >= 5) {{ it+1 }} else {{ it }}
+        val correctedBadlyRoundedPart = asString.drop(1).dropLast(1).takeLastWhile { it in ".$toReplaceInTail" }.replace(toReplaceInTail, "0") + "0"
+        val rest = asString.dropLast(correctedBadlyRoundedPart.length)
+        val correctedRest = rest.dropLast(1) + replacementToLastDigit(rest.last().digitToInt()).toString()
+
+        return (correctedRest + correctedBadlyRoundedPart).toDouble()
     }
 
-    private fun Double.significantDigitsCount() = toString().remove("-").remove(".").dropWhile { it == '0' }.length
+    private fun Double.significantDigitsCount(): Int {
+        val coefficient = toString().lowercase().split("e").first()
+        return coefficient.remove("-").remove(".").length
+    }
 
     override fun contains(value: PDouble): Boolean {
         return this roughlyEquals value
@@ -110,16 +110,15 @@ class PDouble internal constructor(
     override fun toPReal() = this
     override fun toPString(): PString = PString(value.toString())
 
-    private fun toInterval() = PRealInterval.fromPReal(this)
+    private fun toInterval() = PDoubleInterval.fromPReal(this)
     fun toDouble() = value
     fun toInt() = value.toInt()
 
-    override fun minus(other: PRealOperand): Quantity<PDouble> = this + (-other)
     operator fun minus(other: PDouble): PDouble = this + (-other)
 
     override fun unaryMinus() = PDouble(-valueStorage, significantDigitsCount, unit)
 
-    override fun plus(other: PRealOperand): Quantity<PDouble> = if (other is PDouble) this + other else other + this
+    override fun plus(other: PDoubleOperand): Quantity<PDouble> = if (other is PDouble) this + other else other + this
     operator fun plus(other: PDouble): PDouble {
         val sum = valueStorage + other.valueStorage
         val (_, exponent) = sum.scientificNotation()
@@ -132,21 +131,24 @@ class PDouble internal constructor(
         return PDouble(sum, significantDigitsCount, unit + other.unit)
     }
 
-    override fun times(other: PRealOperand): Quantity<PDouble> = if (other is PDouble) this * other else other * this
+    override fun times(other: PDoubleOperand): Quantity<PDouble> = if (other is PDouble) this * other else other * this
     operator fun times(other: PDouble): PDouble = PDouble(
         valueStorage * other.valueStorage,
         min(significantDigitsCount, other.significantDigitsCount),
         unit * other.unit
     )
 
-    override fun div(other: PRealOperand): Quantity<PDouble> = if (other is PDouble) this / other else toInterval() / other
+    override fun inv(): PDouble {
+        return PDouble(1 / valueStorage, significantDigitsCount, unit.inv())
+    }
+
     operator fun div(other: PDouble): PDouble = PDouble(
         valueStorage / other.valueStorage,
         min(significantDigitsCount, other.significantDigitsCount),
         unit / other.unit,
     )
 
-    override fun pow(other: PRealOperand): Quantity<PDouble> =
+    override fun pow(other: PDoubleOperand): Quantity<PDouble> =
         if (other is PDouble) this.pow(other) else toInterval().pow(other)
 
     fun pow(other: PDouble): PDouble {
@@ -221,6 +223,7 @@ class PDouble internal constructor(
 
     fun withoutUnit(): PDouble = PDouble(valueStorage, significantDigitsCount, PUnit())
     fun withUnit(unit: PUnit) = PDouble(valueStorage, significantDigitsCount, unit)
+    fun withValue(value: Double) = PDouble(value, significantDigitsCount, unit)
 
     override fun equals(other: Any?): Boolean {
         return other is PDouble
@@ -229,9 +232,8 @@ class PDouble internal constructor(
     }
 
     private infix fun roughlyEquals(other: PDouble): Boolean {
-        if (this == other) return true
-        if (this.unit != other.unit) return false
-        return abs((valueStorage + other.valueStorage) / (valueStorage - other.valueStorage)) > 100.0
+        val converted = other.convertInto(unit)
+        return abs((valueStorage + converted.valueStorage) / (valueStorage - converted.valueStorage)) > 100.0
     }
 
     override fun hashCode(): Int {

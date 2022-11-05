@@ -17,13 +17,15 @@ class Prod(factors: List<Expression>) : Expression() {
     override fun toString(): String {
         val members = members.map(Expression::simplify)
         val constants = members.filterIsInstance<Const>()
-        val variables = members.filter { it is Var || it is Pow && it.x is Var }
+        val variables = members.filterIsInstance<Var>()
+        val powers = members.filter { it is Pow && it.x is Var }
         val sumAndSubs = members.filter { it is Sum || it is Sub }
-        val others = members.filterOut(sumAndSubs + constants + variables)
+        val others = members.filterOut(sumAndSubs + constants + variables + powers)
         val builder = StringBuilder()
 
         constants.joinTo(builder, "*") { if (it.value.unit.isNeutral()) it.toString() else "($it)" }
         variables.joinTo(builder, "")
+        powers.joinTo(builder, "")
         if (sumAndSubs.isNotEmpty()) sumAndSubs.joinTo(builder, separator = ")(", prefix = "(", postfix = ")")
         if (others.isNotEmpty()) {
             if (builder.toString().isNotBlank()) builder.append("*")
@@ -168,8 +170,8 @@ class Prod(factors: List<Expression>) : Expression() {
         return members.map { it.evaluate(arguments, counters) }.reduce { a, b -> a * b }
     }
 
-    override fun derive(variable: String): Expression {
-        return Sum(members.map { Prod(members - it)*it.derive(variable) })
+    override fun differentiate(variable: String): Expression {
+        return Sum(members.map { Prod(members - it)*it.differentiate(variable) })
     }
 
     override fun withMembers(members: List<Expression>): Expression {

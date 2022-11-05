@@ -41,7 +41,7 @@ class Pow(val x: Expression, val exponent: Expression) : Expression() {
     }
 
     override fun mayBeDiscontinuousImpl(): Boolean {
-        if (PRealInterval.Builtin.negative intersect exponent.outDomain != ImpossibleQuantity<PDouble>() && PDouble(0) in x.outDomain) return true
+        if (PDoubleInterval.Builtin.negative intersect exponent.outDomain != ImpossibleQuantity<PDouble>() && PDouble(0) in x.outDomain) return true
         return x.mayBeDiscontinuous() || exponent.mayBeDiscontinuous()
     }
 
@@ -50,8 +50,8 @@ class Pow(val x: Expression, val exponent: Expression) : Expression() {
         return x.pow(exponent)
     }
 
-    override fun derive(variable: String): Expression {
-        return (exponent.derive(variable) * Ln(x) + exponent*x.derive(variable)/x) * this
+    override fun differentiate(variable: String): Expression {
+        return (exponent.differentiate(variable) * Ln(x) + exponent*x.differentiate(variable)/x) * this
     }
 
     fun withNegatedExponent() = x.pow(-exponent)

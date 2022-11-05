@@ -10,6 +10,12 @@ class CompilationUnit {
         modules[moduleName] = lazy { ModuleBuilder(moduleName, modules).apply(script).build() }
     }
 
+    fun forceLoading(moduleName: String) {
+        require(moduleName in modules) { "No such module : $moduleName" }
+
+        modules.getValue(moduleName).load()
+    }
+
     fun getModule(moduleName: String): Module {
         require(moduleName in modules) { "No such module : $moduleName" }
 
@@ -27,7 +33,7 @@ class CompilationUnit {
     }
 
     fun asModule(name: String = "<main>"): Module {
-        return modules.values.fold(Module(name, emptyMap())) { m1, m2 -> m1 + m2.load() }
+        return modules.values.fold(ModuleBuilder.moduleFromClasses(name, emptyMap())) { m1, m2 -> m1 + m2.load() }
     }
 }
 

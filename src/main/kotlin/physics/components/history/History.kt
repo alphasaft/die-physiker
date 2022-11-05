@@ -1,25 +1,29 @@
 package physics.components.history
 
-class History {
-    private val events = mutableListOf<Event>(Event.Initialization())
+
+class History private constructor(events: List<Event>) : Iterable<Event> {
+    constructor(): this(listOf(Event.Initialization()))
+
+    private val events = events.toMutableList()
+    val size get() = eventsOfInterest().size
+
+    private fun eventsOfInterest(): List<Event> {
+        return events.filterNot { it.isEmpty() }
+    }
 
     fun setCurrentEvent(e: Event) {
         events.add(e)
     }
 
-    fun tell(subEvent: String) {
-        events.last().tell(subEvent)
+    fun addPin(pin: Pin) {
+        events.last().addPin(pin)
     }
 
-    override fun toString(): String {
-        val builder = StringBuilder()
-        var n = 1
-        for (event in events.filterNot(Event::isEmpty)) {
-            builder.append("$n ----\n\n")
-            builder.append(event.summary())
-            builder.append("\n\n")
-            n++
-        }
-        return builder.toString()
+    override fun iterator(): Iterator<Event> {
+        return eventsOfInterest().iterator()
+    }
+
+    fun copy(): History {
+        return History(events)
     }
 }

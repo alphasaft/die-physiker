@@ -4,24 +4,25 @@ package physics.components.history
 abstract class HistoryOwner {
     private val history = History()
 
+    abstract fun representForHistory(): String
+
     fun addUpdate(trigger: String, reliesOn: List<HistoryOwner>, block: () -> Unit) {
         history.setCurrentEvent(Event.Update(trigger, relatedObjects = reliesOn))
         block()
         history.setCurrentEvent(Event.None)
     }
 
-    fun tell(subEvent: String) {
-        history.tell(subEvent)
+    fun addPin(content: String, metadata: String? = null) {
+        history.addPin(Pin(content, metadata))
     }
 
-    protected abstract fun asHeader(): String
-
-    fun toStringWithHistory(): String {
-        val builder = StringBuilder()
-        builder.appendLine("  < ${asHeader()} >")
-        builder.appendLine()
-        builder.append(history.toString())
-        return builder.toString()
+    fun formatHistory(formatter: HistoryFormatter = StandardHistoryFormatter): String {
+        return "< ${representForHistory()} > \n\n${formatter.format(history)}"
     }
 
+    fun snapshot(): (HistoryFormatter) -> String {
+        val representation = representForHistory()
+        val historyCopy = history.copy()
+        return { f -> "< $representation > \n\n ${f.format(historyCopy)}" }
+    }
 }

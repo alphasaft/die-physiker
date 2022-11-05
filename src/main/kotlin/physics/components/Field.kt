@@ -6,6 +6,7 @@ import physics.components.history.HistoryOwner
 import physics.quantities.*
 import kotlin.reflect.KClass
 
+
 class Field<T : PValue<T>> private constructor(
     @Deprecated("When representing field, should use 'representation'") val name: String,
     val type: KClass<T>,
@@ -15,20 +16,21 @@ class Field<T : PValue<T>> private constructor(
 ) : HistoryOwner() {
 
     init {
-        if (content !is AnyQuantity)
-            tell("Initialized with value $content.")
+        if (content !is AnyQuantity && content !is WithUnit) addPin("$representation = $content", metadata = "field-init")
     }
 
-    override fun asHeader(): String = representation
+    override fun representForHistory(): String {
+        return representation
+    }
 
     fun getContent() = content
 
     fun setContent(content: Quantity<*>) {
         val convertedContent = content.toQuantity(type)
-        val newContent = this.content simpleIntersect contentNormalizer(convertedContent)
+        val newContent = this.content intersect contentNormalizer(convertedContent)
         require(newContent !is ImpossibleQuantity<*>) { "Crash : $representation = $content : not compatible with $representation = ${this.content}." }
 
-        if (newContent != this.content) tell("$representation = $newContent")
+        if (newContent != this.content) addPin("$representation = $newContent", metadata = "field-updated")
 
         this.content = newContent
     }

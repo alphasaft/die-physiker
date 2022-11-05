@@ -12,11 +12,13 @@ import kotlin.reflect.KClass
 
 
 abstract class Expression {
-    open val complexity get() = members.size
+
     abstract val members: Collection<Expression>
+    open val complexity: Int get() = members.sumOf { it.complexity }
     open val additionalEqualityCheck: (Expression) -> Boolean = { true }
 
     open val outDomain: Quantity<PDouble> get() = evaluateExhaustively(allVariables().associateWith<String, VariableValue<Quantity<PDouble>>> { VariableValue.Single(AnyQuantity()) })
+
 
     private var simplified: Expression? = null
         set(value) {
@@ -37,6 +39,7 @@ abstract class Expression {
     protected abstract fun simplifyImpl(): Expression
 
 
+
     fun mayBeDiscontinuous(): Boolean {
         return simplify().mayBeDiscontinuousImpl()
     }
@@ -44,24 +47,24 @@ abstract class Expression {
     protected abstract fun mayBeDiscontinuousImpl(): Boolean
 
 
-    fun toFunction(parameter: String): ExpressionAsFunction {
-        return ExpressionAsFunction(this, parameter)
+    operator fun rangeTo(parameter: String): PFunctionFromExpression {
+        return PFunctionFromExpression(this, parameter)
     }
 
     operator fun contains(member: Expression): Boolean {
-        return member == this || member in allMembers()
+        return member in allMembers()
     }
 
     fun allMembers(): List<Expression> {
-        return members + members.flatMap { it.allMembers() }
+        return members.flatMap { it.allMembers() } + this
     }
 
     fun allVariables(): Set<String> {
-        return (allMembers() + this).filterIsInstance<Var>().map { it.name }.toSet()
+        return allMembers().filterIsInstance<Var>().map { it.name }.toSet()
     }
 
     fun allCounters(): List<String> {
-        return (allMembers() + this).filterIsInstance<Counter>().map { it.name }
+        return allMembers().filterIsInstance<Counter>().map { it.name }
     }
 
 
@@ -100,7 +103,7 @@ abstract class Expression {
 
     abstract fun evaluate(arguments: Args<VariableValue<PDouble>> = emptyMap(), counters: Args<Int> = emptyMap()): PDouble
 
-    abstract fun derive(variable: String): Expression
+    abstract fun differentiate(variable: String): Expression
 
     override fun equals(other: Any?): Boolean {
         if (members.isEmpty()) throw IllegalStateException("Expression with no members should override equals.")

@@ -2,7 +2,7 @@ package physics.quantities.expressions
 
 import Args
 import physics.quantities.*
-import physics.quantities.Function
+import physics.quantities.PFunction
 import kotlin.math.*
 import kotlin.reflect.full.primaryConstructor
 
@@ -13,24 +13,25 @@ abstract class NativeFunction(val argument: Expression) : Expression() {
     abstract val name: String
     abstract override val outDomain: Quantity<PDouble>
     abstract val isFunctionContinuous: Boolean
-    abstract val functionDerivative: ExpressionAsFunction
-    abstract val reciprocal: ExpressionAsFunction
+    abstract val functionDerivative: PFunctionFromExpression
+    abstract val reciprocal: PFunctionFromExpression
 
-    private val associatedFunction = object : Function {
+    private val associatedFunction = object : PFunction {
         override val outDomain: Quantity<PDouble> get() = this@NativeFunction.outDomain
-        override val reciprocal: Function get() = this@NativeFunction.reciprocal
+        override val reciprocal: PFunction get() = this@NativeFunction.reciprocal
+        override val derivative: PFunction get() = this@NativeFunction.functionDerivative
         override fun invoke(x: String): String = "$name($x)"
         override fun invoke(x: PDouble): PDouble = this@NativeFunction(x)
         override fun invokeExhaustively(x: Quantity<PDouble>): Quantity<PDouble> = this@NativeFunction(x)
     }
 
     protected abstract operator fun invoke(x: PDouble): PDouble
-    protected abstract operator fun invoke(x: PRealInterval): Quantity<PDouble>
+    protected abstract operator fun invoke(x: PDoubleInterval): Quantity<PDouble>
 
     operator fun invoke(x: Quantity<PDouble>): Quantity<PDouble> {
         return when (x) {
             is PDouble -> this(x)
-            is PRealInterval -> this(x)
+            is PDoubleInterval -> this(x)
             else -> AnyQuantity()
         }
     }
@@ -71,12 +72,12 @@ abstract class NativeFunction(val argument: Expression) : Expression() {
         return this::class.primaryConstructor!!.call(argument)
     }
 
-    final override fun derive(variable: String): Expression {
-        return argument.derive(variable) * functionDerivative(argument)
+    final override fun differentiate(variable: String): Expression {
+        return argument.differentiate(variable) * functionDerivative(argument)
     }
 
-    fun asFunction(): ExpressionAsFunction {
-        return this::class.primaryConstructor!!.call(v("x")).toFunction("x")
+    fun asFunction(): PFunctionFromExpression {
+        return this::class.primaryConstructor!!.call(v("x")).."x"
     }
 
     final override fun toString(): String {
@@ -103,20 +104,20 @@ abstract class NativeFunction(val argument: Expression) : Expression() {
 class Id(argument: Expression): NativeFunction(argument) {
     override val name: String = "id"
     override val outDomain: Quantity<PDouble> = AnyQuantity()
-    override val functionDerivative: ExpressionAsFunction = c(1).toFunction("x")
-    override val reciprocal: ExpressionAsFunction = Id(v("x")).toFunction("x")
+    override val functionDerivative: PFunctionFromExpression = c(1).."x"
+    override val reciprocal: PFunctionFromExpression = Id(v("x")).."x"
     override val isFunctionContinuous: Boolean = true
     override fun invoke(x: PDouble): PDouble = x
-    override fun invoke(x: PRealInterval): Quantity<PDouble> = x
+    override fun invoke(x: PDoubleInterval): Quantity<PDouble> = x
 }
 
 
 class Exp(argument: Expression) : NativeFunction(argument) {
     override val name: String = "exp"
-    override val outDomain: Quantity<PDouble> = PRealInterval.Builtin.strictlyPositive
+    override val outDomain: Quantity<PDouble> = PDoubleInterval.Builtin.strictlyPositive
     override val isFunctionContinuous: Boolean = true
-    override val functionDerivative: ExpressionAsFunction get() = Exp(Var("x")).toFunction("x")
-    override val reciprocal: ExpressionAsFunction get() = Ln(Var("x")).toFunction("x")
+    override val functionDerivative: PFunctionFromExpression get() = Exp(Var("x")).."x"
+    override val reciprocal: PFunctionFromExpression get() = Ln(Var("x")).."x"
 
     override fun simplifyImpl(): Expression {
         if (argument is Prod && argument.members.any { it is Ln }) {
@@ -131,7 +132,7 @@ class Exp(argument: Expression) : NativeFunction(argument) {
         return x.applyFunction(::exp)
     }
 
-    override fun invoke(x: PRealInterval): Quantity<PDouble> {
+    override fun invoke(x: PDoubleInterval): Quantity<PDouble> {
         return x.applyMonotonousFunction(::exp)
     }
 
@@ -144,8 +145,8 @@ class Ln(argument: Expression) : NativeFunction(argument) {
     override val name: String = "ln"
     override val outDomain: Quantity<PDouble> = AnyQuantity()
     override val isFunctionContinuous: Boolean = true
-    override val functionDerivative: ExpressionAsFunction get() = (Const(1)/Var("x")).toFunction("x")
-    override val reciprocal: ExpressionAsFunction get() = Exp(Var("x")).toFunction("x")
+    override val functionDerivative: PFunctionFromExpression get() = (Const(1)/Var("x")).."x"
+    override val reciprocal: PFunctionFromExpression get() = Exp(Var("x")).."x"
 
     override fun rewriteToSimplifyArgument(): Expression {
         val simplifiedArgument = argument.simplify()
@@ -157,17 +158,17 @@ class Ln(argument: Expression) : NativeFunction(argument) {
         return x.applyFunction(::ln)
     }
 
-    override fun invoke(x: PRealInterval): Quantity<PDouble> {
+    override fun invoke(x: PDoubleInterval): Quantity<PDouble> {
         return x.applyMonotonousFunction(::ln)
     }
 }
 
 class Sin(argument: Expression) : NativeFunction(argument) {
     override val name: String = "sin"
-    override val outDomain: Quantity<PDouble> = PRealInterval.Builtin.fromMinus1To1
+    override val outDomain: Quantity<PDouble> = PDoubleInterval.Builtin.fromMinus1To1
     override val isFunctionContinuous: Boolean = true
-    override val functionDerivative: ExpressionAsFunction get() = Cos(Var("x")).toFunction("x")
-    override val reciprocal: ExpressionAsFunction = Arcsin(Var("x")).toFunction("x")
+    override val functionDerivative: PFunctionFromExpression get() = Cos(Var("x")).."x"
+    override val reciprocal: PFunctionFromExpression = Arcsin(Var("x")).."x"
 
     override fun rewriteToSimplifyArgument(): Expression {
         val simplifiedArgument = argument.simplify()
@@ -181,17 +182,17 @@ class Sin(argument: Expression) : NativeFunction(argument) {
         return x.applyFunction(::sin)
     }
 
-    override fun invoke(x: PRealInterval): Quantity<PDouble> {
+    override fun invoke(x: PDoubleInterval): Quantity<PDouble> {
         return x.applyPeriodicalFunction(::sin, t = PDouble(2*PI), mapOf(PDouble(PI/2) to PDouble(1), PDouble(3*PI/2) to PDouble(-1)))
     }
 }
 
 class Cos(argument: Expression) : NativeFunction(argument) {
     override val name: String = "cos"
-    override val outDomain: Quantity<PDouble> = PRealInterval.Builtin.fromMinus1To1
+    override val outDomain: Quantity<PDouble> = PDoubleInterval.Builtin.fromMinus1To1
     override val isFunctionContinuous: Boolean = true
-    override val functionDerivative: ExpressionAsFunction get() = (-Sin(v("x"))).toFunction("x")
-    override val reciprocal: ExpressionAsFunction = Arccos(v("x")).toFunction("x")
+    override val functionDerivative: PFunctionFromExpression get() = (-Sin(v("x"))).."x"
+    override val reciprocal: PFunctionFromExpression = Arccos(v("x")).."x"
 
     override fun rewriteToSimplifyArgument(): Expression {
         return when (val simplifiedArgument = argument.simplify()) {
@@ -208,39 +209,39 @@ class Cos(argument: Expression) : NativeFunction(argument) {
         return x.applyFunction(::cos)
     }
 
-    override fun invoke(x: PRealInterval): Quantity<PDouble> {
+    override fun invoke(x: PDoubleInterval): Quantity<PDouble> {
         return x.applyPeriodicalFunction(::cos, t = PDouble(2*PI), mapOf(PDouble(0) to PDouble(1), PDouble(PI) to PDouble(-1)))
     }
 }
 
 class Arcsin(argument: Expression) : NativeFunction(argument) {
     override val name: String = "arcsin"
-    override val outDomain: Quantity<PDouble> = PRealInterval.Builtin.fromMinus1To1
+    override val outDomain: Quantity<PDouble> = PDoubleInterval.Builtin.fromMinus1To1
     override val isFunctionContinuous: Boolean = true
-    override val functionDerivative: ExpressionAsFunction = (c(1) / sqrt( v("x").square() + c(1) )).toFunction("x")
-    override val reciprocal: ExpressionAsFunction get() = Sin(Var("x")).toFunction("x")
+    override val functionDerivative: PFunctionFromExpression = (c(1) / sqrt( v("x").square() + c(1) )).."x"
+    override val reciprocal: PFunctionFromExpression get() = Sin(Var("x")).."x"
 
     override fun invoke(x: PDouble): PDouble {
         return x.applyFunction(::asin)
     }
 
-    override fun invoke(x: PRealInterval): Quantity<PDouble> {
+    override fun invoke(x: PDoubleInterval): Quantity<PDouble> {
         return x.applyPeriodicalFunction(::asin, t = PDouble(2*PI), mapOf(PDouble(0) to PDouble(1), PDouble(PI) to PDouble(-1)))
     }
 }
 
 class Arccos(argument: Expression) : NativeFunction(argument) {
     override val name: String = "arccos"
-    override val outDomain: Quantity<PDouble> = PRealInterval.Builtin.fromMinus1To1
+    override val outDomain: Quantity<PDouble> = PDoubleInterval.Builtin.fromMinus1To1
     override val isFunctionContinuous: Boolean = true
-    override val functionDerivative: ExpressionAsFunction = (c(-1) / sqrt( v("x").square() + c(1) )).toFunction("x")
-    override val reciprocal: ExpressionAsFunction get() = Cos(Var("x")).toFunction("x")
+    override val functionDerivative: PFunctionFromExpression = (c(-1) / sqrt( v("x").square() + c(1) )).."x"
+    override val reciprocal: PFunctionFromExpression get() = Cos(Var("x")).."x"
 
     override fun invoke(x: PDouble): PDouble {
         return x.applyFunction(::acos)
     }
 
-    override fun invoke(x: PRealInterval): Quantity<PDouble> {
+    override fun invoke(x: PDoubleInterval): Quantity<PDouble> {
         return x.applyMonotonousFunction(::acos)
     }
 }

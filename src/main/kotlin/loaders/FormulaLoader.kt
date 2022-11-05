@@ -99,7 +99,7 @@ class FormulaLoader(
             "double" -> Const(operandNode["value"].toDouble())
             "variable" -> Var(operandNode["variableName"])
             "expression" -> generateExpression(operandNode.."subexpression")
-            "multiVariablesCollector" -> GenericSum(generateExpression(operandNode.."genericExpression"), operandNode["counter"], GenericExpression.Bound.Static(1), GenericExpression.Bound.Static(2))
+            "multiVariablesCollector" -> GenericSum(generateExpression(operandNode.."genericExpression"), operandNode["counter"], IndexedExpression.Bound.Static(1), IndexedExpression.Bound.Static(2))
             else -> throw NoWhenBranchMatchedException()
         }
     }

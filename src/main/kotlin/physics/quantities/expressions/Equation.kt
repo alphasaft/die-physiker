@@ -39,8 +39,8 @@ class Equation(val left: Expression, val right: Expression, ) {
         }
     }
 
-    fun composeWith(equation: Equation, joiningVariable: String): Equation {
-        return Equation(this.left, right.substitute(Var(joiningVariable), equation.right))
+    fun composeWith(equation: Equation): Equation {
+        return Equation(this.left, right.substitute(equation.left, equation.right))
     }
 
 

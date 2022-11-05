@@ -80,6 +80,12 @@ fun <T> Iterable<T>.filterOut(excluded: Iterable<T>): List<T> {
     return filter { item -> excluded.none { e -> e === item } }
 }
 
+fun <T> List<T>.withRemoved(elems: List<T>): List<T> {
+    val result = toMutableList()
+    for (elem in elems) result.remove(elem)
+    return result
+}
+
 inline fun <T, reified U : T> Iterable<T>.filterIsInstanceAndReplace(replacement: (List<U>) -> List<T>): List<T> {
     val replaced = this.filterIsInstance<U>()
     val unchanged = this.filterOut(replaced)

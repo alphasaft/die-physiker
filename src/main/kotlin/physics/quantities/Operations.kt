@@ -9,7 +9,7 @@ infix fun <V : PValue<V>> Quantity<V>.includes(other: Quantity<V>): Boolean =
     this union other == this || this intersect other == other
 
 
-private fun <T> commutativeOperation(x: T, y: T, operation: (a: T, b: T) -> T, reducer: (T, T) -> T): T =
+private fun <T, R> commutativeOperation(x: T, y: T, operation: (a: T, b: T) -> R, reducer: (R, R) -> R): R =
     reducer(operation(x, y), operation(y, x))
 
 

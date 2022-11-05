@@ -50,7 +50,7 @@ class Formula(
     fun plug(formula: Formula, where: String): Formula = plugImpl(formula, variable = where)
     private fun plugImpl(formula: Formula, variable: String): Formula {
         val fusedSpecs = specs.composedWith(formula.specs, variable)
-        val fusedExpressions = equation.composeWith(formula.equation, variable)
+        val fusedExpressions = equation.composeWith(formula.equation)
 
         return Formula(
             name = "<Combination of ${this.name} and ${formula.name}>",

@@ -1,44 +1,10 @@
 package physics.quantities.expressions
 
-import Args
-import physics.quantities.Quantity
-import physics.quantities.PDouble
-import physics.quantities.minus
 
-class Sub(val left: Expression, val right: Expression) : Expression() {
-    override val members: Collection<Expression> = listOf(left, right)
-
-    fun asSum(): Sum {
-        return Sum(left, Minus(right))
-    }
-
-    override fun getDirectMemberIsoler(member: Expression): (Expression) -> Expression {
-        return if (member === left) {{ it + right }} else {{ left - it }}
-    }
-
-    override fun mayBeDiscontinuousImpl(): Boolean {
-        return left.mayBeDiscontinuous() || right.mayBeDiscontinuous()
-    }
-
-    override fun simplifyImpl(): Expression {
-        return asSum().simplify()
-    }
-
+class Sub(val left: Expression, val right: Expression) : Sum(left, Minus(right)) {
     override fun withMembers(members: List<Expression>): Expression {
         val (left, right) = members
         return left - right
-    }
-
-    override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Args<Int>): Quantity<PDouble> {
-        return left.evaluateExhaustively(arguments, counters) - right.evaluateExhaustively(arguments, counters)
-    }
-
-    override fun evaluate(arguments: Args<VariableValue<PDouble>>, counters: Args<Int>): PDouble {
-        return left.evaluate(arguments, counters) - right.evaluate(arguments, counters)
-    }
-
-    override fun derive(variable: String): Expression {
-        return left.derive(variable) - right.derive(variable)
     }
 
     override fun toString(): String {

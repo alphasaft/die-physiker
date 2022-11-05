@@ -36,7 +36,7 @@ class Size(private val seriesName: String) : Expression() {
         return this
     }
 
-    override fun derive(variable: String): Expression {
+    override fun differentiate(variable: String): Expression {
         return Const(0)
     }
 

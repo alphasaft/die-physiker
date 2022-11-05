@@ -2,28 +2,46 @@
 
 import physics.components.*
 import physics.packaging.startCompilation
-import physics.quantities.PDouble
-import physics.quantities.PInt
-import physics.quantities.PString
-import physics.quantities.expressions.div
-import physics.quantities.expressions.equals
-import physics.quantities.expressions.v
+import physics.quantities.*
+import physics.quantities.PFunction
+import physics.quantities.expressions.*
 import physics.rules.*
+import physics.rules.relations.CsvDatabaseReader
+import physics.rules.relations.Database
+import physics.rules.relations.Formula
 
 
 fun main() {
 
-    val compilation = startCompilation()
+    fun findZeroOf(f: PFunction, x0: PDouble, epsilon: PDouble): Double {
+        val fp = f.derivative
+        var x = x0
+        while (f(x).abs() >= epsilon) {
+            x -= f(x) / fp(x)
+        }
+        return x.toDouble().roundAt(-3)
+    }
 
+    val f = (exp(v("x"))).."x"
+    println(findZeroOf(f, x0 = PDouble(1), epsilon = PDouble(0.00000000000001)))
+
+    val I = PDoubleInterval.raw(
+        isLowerBoundClosed = true,
+        lowerBound = PDouble(-1.0),
+        upperBound = PDouble(1.0),
+        isUpperBoundClosed = true,
+    )
+
+    val compilation = startCompilation()
 
 
     compilation.module("base") {
 
-        ("Equation") .. ComponentClass(
+        + ComponentClass(
             "Equation",
             structure = ComponentStructure(
-                fieldsTemplates = mapOf(
-                    "solutions" to Field.Template<PDouble>("solutions", notation = Field.Template.Notation.Always("S"))
+                fieldsTemplates = listOf(
+                    Field.Template<PDouble>("solutions", notation = Field.Template.Notation.Always("S"))
                 ),
                 stateEquationsTemplates = mapOf(
                     "E" to StateEquation.Template("x")
@@ -31,97 +49,100 @@ fun main() {
             )
         )
 
+        + ComponentClass(
+            "IntBox",
+            structure = ComponentStructure(
+                fieldsTemplates = listOf(
+                    Field.Template<PInt>("value", Field.Template.Notation.Always("value"))
+                )
+            )
+        )
 
-
-        ("List") .. ComponentClass(
+        + ComponentClass(
             "List",
             structure = ComponentStructure(
-                boxesTemplates = mapOf(
-                    "items" to ComponentBox.Template("items", ComponentClass.Any)
+                boxesTemplates = listOf(
+                    ComponentBox.Template("items", "IntBox"())
                 )
             )
         )
     }
 
 
-
-
     compilation.module("chemistry") {
-
-        useQualified("base")
 
         val periodicTableOfElements = Database("Tableau Périodique", CsvDatabaseReader("${cwd()}\\resources\\PeriodicTableOfElements.csv"))
 
-        ("Atome") .. ComponentClass(
+        + ComponentClass(
             "Atome",
             structure = ComponentStructure(
-                fieldsTemplates = mapOf(
-                    "nom" to Field.Template<PString>("nom", Field.Template.Notation.Always("nom")),
-                    "numéro atomique" to Field.Template<PInt>("numéro atomique", Field.Template.Notation.Always("Z"))
+                fieldsTemplates = listOf(
+                    Field.Template<PString>("nom", Field.Template.Notation.Always("nom")),
+                    Field.Template<PInt>("numéro atomique", Field.Template.Notation.Always("Z"))
                 )
             ),
             rules = setOf(
-                Query(
+                ForEachQueryResult(Query(
                     NameRootComponent("A"),
                     ExtractField("AtomicNumber", sourceIdentifier = "A", fieldName = "numéro atomique"),
                     ExtractField("Element", sourceIdentifier = "A", fieldName = "nom")
-                ).let { ForEachQueryResult(it) perform ApplyRelation(periodicTableOfElements) }
+                )) pleaseDo ApplyRelation(periodicTableOfElements)
             )
         )
 
-        ("Liquide") .. ComponentClass(
+        + ComponentClass(
             "Liquide",
             abstract = true,
             structure = ComponentStructure(
-                fieldsTemplates = mapOf(
-                    "volume" to Field.Template<PDouble>("volume", Field.Template.Notation.UseUnderscore("V"))
+                fieldsTemplates = listOf(
+                    Field.Template<PDouble>("volume", Field.Template.Notation.UseUnderscore("V"), WithUnit("L"))
                 )
             )
         )
 
-        ("Solute") .. ComponentClass(
+        + ComponentClass(
             "Soluté",
             structure = ComponentStructure(
-                fieldsTemplates = mapOf(
-                    "masse" to Field.Template<PDouble>("masse", Field.Template.Notation.UseUnderscore("m")),
-                    "masse volumique" to Field.Template<PDouble>("masse volumique", Field.Template.Notation.UseParenthesis("p"))
+                fieldsTemplates = listOf(
+                    Field.Template<PDouble>("masse", Field.Template.Notation.UseUnderscore("m")),
+                    Field.Template<PDouble>("masse volumique", Field.Template.Notation.UseParenthesis("p"))
                 )
             )
         )
 
-        ("Solvant") .. ComponentClass(
+        + ComponentClass(
             "Solvant",
             structure = ComponentStructure(
                 extends = setOf("Liquide"()),
-                fieldsTemplates = mapOf(
-                    "nom" to Field.Template<PString>("nom", Field.Template.Notation.Always("nom"))
+                fieldsTemplates = listOf(
+                    Field.Template<PString>("nom", Field.Template.Notation.Always("nom"))
                 )
             )
         )
 
-        ("Solution") .. ComponentClass(
+        + ComponentClass(
             "Solution",
             structure = ComponentStructure(
                 extends = setOf("Liquide"()),
-                boxesTemplates = mapOf(
-                    "solutés" to ComponentBox.Template("solutés", "Solute"()),
-                    "solvant" to ComponentBox.Template("solvant", "Solvant"())
+                boxesTemplates = listOf(
+                    ComponentBox.Template("solutés", "Soluté"()),
+                    ComponentBox.Template("solvant", "Solvant"())
                 )
             ),
             rules = setOf(
-                Query(
+                ForEachQueryResult(Query(
                     NameRootComponent("S"),
                     SelectComponent("Sol", sourceIdentifier = "S", boxName = "solvant"),
                     ExtractField("Vs", sourceIdentifier = "S", fieldName = "volume"),
                     ExtractField("VSol", sourceIdentifier = "Sol", fieldName = "volume")
-                ).let { ForEachQueryResult(it) perform ApplyRelation(Formula(v("Vs") equals v("VSol"))) },
-                Query(
+                )) pleaseDo ApplyRelation(Formula(v("Vs") equals v("VSol"))),
+                ForEachQueryResult(Query(
                     NameRootComponent("S"),
                     SelectComponent("X", sourceIdentifier = "S", boxName = "solutés"),
                     ExtractField("p", sourceIdentifier = "X", fieldName = "masse volumique"),
                     ExtractField("m", sourceIdentifier = "X", fieldName = "masse"),
                     ExtractField("V", sourceIdentifier = "S", fieldName = "volume")
-                ).let { ForEachQueryResult(it) perform ApplyRelation(Formula(v("p") equals v("m") / v("V"))) }
+                )) pleaseDo ApplyRelation(Formula(v("p") equals v("m") / v("V")))
             )
         )
     }
@@ -129,7 +150,7 @@ fun main() {
 
 
     val chemistry = compilation.asModule()
-    val Solute = chemistry["Solute"]
+    val Solute = chemistry["Soluté"]
     val Solvant = chemistry["Solvant"]
     val Solution = chemistry["Solution"]
     val Atome = chemistry["Atome"]
@@ -154,5 +175,5 @@ fun main() {
     ).apply { update() }
 
     val p = solute2.getField("masse volumique")
-    print(p.toStringWithHistory())
+    printAll(p.formatHistory())
 }

@@ -4,15 +4,15 @@ import Args
 import UnorderedList
 import binomialCoefficient
 import filterIsInstanceAndReplace
-import filterOut
 import isInt
 import physics.quantities.Quantity
 import physics.quantities.asPValue
 import physics.quantities.PDouble
 import physics.quantities.plus
+import withRemoved
 
 
-class Sum(terms: List<Expression>): Expression() {
+open class Sum(terms: List<Expression>): Expression() {
     constructor(vararg terms: Expression): this(terms.toList())
 
     override val members: Collection<Expression> = UnorderedList(terms)
@@ -26,8 +26,8 @@ class Sum(terms: List<Expression>): Expression() {
         return { it - Sum(parasiteMembers) }
     }
 
-    override fun derive(variable: String): Expression {
-        return Sum(members.map { it.derive(variable) })
+    override fun differentiate(variable: String): Expression {
+        return members.map { it.differentiate(variable) }.reduce(Expression::plus)
     }
 
     override fun mayBeDiscontinuousImpl(): Boolean {
@@ -77,7 +77,6 @@ class Sum(terms: List<Expression>): Expression() {
     private fun flattenMember(member: Expression): Collection<Expression> =
         when (member) {
             is Sum -> member.members
-            is Sub -> member.asSum().members
             is Minus -> flattenMember(member.value).map { Minus(it) }
             else -> listOf(member)
         }
@@ -173,10 +172,10 @@ class Sum(terms: List<Expression>): Expression() {
 
     private fun applyIdentityTo(members: List<Expression>, a: Expression, b: Expression, n: Int): List<Expression> {
         val remarquableIdentity = generateRemarquableIdentity(a, b, n)
-        val missingMembers = remarquableIdentity.filterOut(members)
+        val missingMembers = remarquableIdentity.withRemoved(members)
 
         if (missingMembers.size < remarquableIdentity.size / 2) {
-            return ((members.filterOut(remarquableIdentity))
+            return ((members.withRemoved(remarquableIdentity))
                 + missingMembers.map { Minus(it) }
                 + Sum(a, b).pow(Const(n)))
         }

@@ -1,5 +1,5 @@
 
-fun println(vararg args: Any?, separator: String = " ") {
+fun printAll(vararg args: Any?, separator: String = " ") {
     kotlin.io.println(args.joinToString(separator))
 }
 

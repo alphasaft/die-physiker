@@ -30,8 +30,8 @@ abstract class Alias(val expression: Expression) : Expression() {
         return expression.withMembers(members)
     }
 
-    override fun derive(variable: String): Expression {
-        return expression.derive(variable)
+    override fun differentiate(variable: String): Expression {
+        return expression.differentiate(variable)
     }
 
     override fun getDirectMemberIsoler(member: Expression): (Expression) -> Expression {

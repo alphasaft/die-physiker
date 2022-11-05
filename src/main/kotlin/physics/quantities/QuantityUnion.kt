@@ -1,5 +1,6 @@
 package physics.quantities
 
+import printAll
 import kotlin.reflect.KClass
 
 
@@ -42,6 +43,7 @@ open class QuantityUnion<V : PValue<V>> private constructor(
     }
 
     override fun simplify(): Quantity<V> {
+
         if (items.any { it is AnyQuantity<V> }) return AnyQuantity(type)
 
         val items = items
@@ -50,13 +52,14 @@ open class QuantityUnion<V : PValue<V>> private constructor(
             .toSet()
 
         if (items.isEmpty()) return ImpossibleQuantity(type)
-        if (items.size == 1) return items.single()
-        if (items.size == 2) return this
+        if (items.size == 1) return items.single().simplify()
 
         for ((i, x) in items.withIndex()) {
             for (y in items.drop(i+1)) {
                 val union = x union y
-                if (union !is QuantityUnion) return new(type, items - y - x + union)
+                if (union !is QuantityUnion) {
+                    return new(type, items - y - x + union)
+                }
             }
         }
 

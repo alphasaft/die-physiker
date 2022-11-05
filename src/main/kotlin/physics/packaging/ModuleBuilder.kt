@@ -3,18 +3,41 @@ package physics.packaging
 import mergeWith
 import physics.components.ComponentClass
 
+
 class ModuleBuilder(private val name: String, private val modules: Map<String, UnloadedModule>) {
+
+    companion object {
+        private const val BASE_MODULE_NAME = "base"
+        private var moduleId = 1
+
+        private fun allocateId(): Int {
+            return moduleId++
+        }
+
+        internal fun moduleFromClasses(name: String, classes: Map<String, ComponentClass>): Module {
+            return Module(name, allocateId(), classes)
+        }
+    }
+
+    private val moduleId = allocateId()
+
     private val imported = mutableListOf<String>()
     private val unqualifiedClasses = mutableMapOf<String, ComponentClass>()
     private val qualifiedModules = mutableMapOf<String, Module>()
 
     private val localClasses = mutableMapOf<String, ComponentClass>()
-    private val flags = mutableListOf<String>()
 
     init {
-        if (isAvailable("base")) use("base")
+        if (name != BASE_MODULE_NAME && isAvailable(BASE_MODULE_NAME)) use(BASE_MODULE_NAME)
     }
 
+
+    private fun MutableMap<String, ComponentClass>.mergeWithModuleContents(contents: Map<String, ComponentClass>) {
+        mergeWith(contents) { crashingName, c1, c2 ->
+            require(c1 == c2) { "When merging modules : Crash on name $crashingName." }
+            c1
+        }
+    }
 
     private fun traceImport(moduleName: String) {
         imported.add(moduleName)
@@ -22,7 +45,10 @@ class ModuleBuilder(private val name: String, private val modules: Map<String, U
 
     private fun requireCanImport(moduleName: String) {
         require(moduleName in modules) { "Can't find module '$moduleName'" }
-        require(moduleName !in imported) { "Module was already imported." }
+        require(moduleName !in imported) {
+            if (moduleName == BASE_MODULE_NAME) "Module '$BASE_MODULE_NAME' is always imported by default."
+            else "Module '$moduleName' was already imported."
+        }
     }
 
     fun isAvailable(moduleName: String): Boolean {
@@ -33,10 +59,7 @@ class ModuleBuilder(private val name: String, private val modules: Map<String, U
         requireCanImport(moduleName)
 
         traceImport(moduleName)
-        unqualifiedClasses.mergeWith(
-            modules.getValue(moduleName).load().unpack(),
-            merge = { k, _, _ -> throw IllegalArgumentException("When importing '$moduleName' : Crashing declarations for name '$k'. Try useQualified instead.") }
-        )
+        unqualifiedClasses.mergeWithModuleContents(modules.getValue(moduleName).load().unpack(), )
     }
 
     fun useQualified(moduleName: String) {
@@ -50,9 +73,15 @@ class ModuleBuilder(private val name: String, private val modules: Map<String, U
         qualifiedModules[alias] = modules.getValue(moduleName).load()
     }
 
+    fun export(moduleName: String) {
+        use(moduleName)
 
-    fun flag(name: String) {
-        flags.add(name)
+        localClasses.mergeWithModuleContents(modules.getValue(moduleName).load().unpack())
+    }
+
+    fun hide(className: String) {
+        unqualifiedClasses.remove(className)
+        localClasses.remove(className)
     }
 
 
@@ -73,14 +102,14 @@ class ModuleBuilder(private val name: String, private val modules: Map<String, U
         return unqualifiedClasses.getValue(className)
     }
 
-
-    operator fun String.rangeTo(c: ComponentClass) {
-        localClasses[this] = c
-        unqualifiedClasses[this] = c
+    operator fun ComponentClass.unaryPlus() {
+        require(unqualifiedClasses[name]?.equals(this) != false) { "Cannot redeclare class $name." }
+        localClasses[name] = this
+        unqualifiedClasses[name] = this
     }
 
 
     internal fun build(): Module {
-        return Module(name, localClasses)
+        return Module(name, moduleId, localClasses)
     }
 }

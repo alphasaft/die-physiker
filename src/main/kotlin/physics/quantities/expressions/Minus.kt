@@ -9,6 +9,7 @@ class Minus(val value: Expression) : Expression() {
     override val members: Collection<Expression> = listOf(value)
 
     override fun toString(): String {
+        println(value::class)
         return if (value is Const || value is Var || value is Pow || value is Prod || value is Div) "-$value" else "-($value)"
     }
 
@@ -20,8 +21,8 @@ class Minus(val value: Expression) : Expression() {
         return -value.evaluate(arguments, counters)
     }
 
-    override fun derive(variable: String): Expression {
-        return -value.derive(variable)
+    override fun differentiate(variable: String): Expression {
+        return -value.differentiate(variable)
     }
 
     override fun getDirectMemberIsoler(member: Expression): (Expression) -> Expression {

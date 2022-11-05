@@ -12,14 +12,14 @@ class GenericSum(
     counterName: String,
     start: Bound = Bound.Static(1),
     end: Bound,
-) : GenericExpression(underlyingExpression, counterName, start, end) {
+) : IndexedExpression(underlyingExpression, counterName, start, end) {
 
     constructor(
         series: String,
         counter: String,
         start: Bound = Bound.Static(1),
         endBound: Bound,
-    ) : this(Indexing(series, Indexing.Indexer.UseCounter(counter)), counter, start, endBound)
+    ) : this(SeriesIndexing(series, SeriesIndexing.Indexer.UseCounter(counter)), counter, start, endBound)
 
     override val members: Collection<Expression> = listOf(underlyingExpression)
     override val associatedStandardExpressionCtr: KFunction1<List<Expression>, Expression> = ::Sum
@@ -64,7 +64,7 @@ class GenericSum(
         return GenericSum(genericExpression, counterName, start, end)
     }
 
-    override fun derive(variable: String): Expression {
-        return GenericSum(term.derive(variable), counterName, start, end)
+    override fun differentiate(variable: String): Expression {
+        return GenericSum(term.differentiate(variable), counterName, start, end)
     }
 }

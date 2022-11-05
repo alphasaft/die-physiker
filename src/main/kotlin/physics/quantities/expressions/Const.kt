@@ -66,7 +66,7 @@ class Const(val value: PDouble) : Expression() {
         return this
     }
 
-    override fun derive(variable: String): Expression {
+    override fun differentiate(variable: String): Expression {
         return Const(0)
     }
 

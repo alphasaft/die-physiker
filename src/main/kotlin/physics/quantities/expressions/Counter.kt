@@ -5,9 +5,10 @@ import noop
 import physics.quantities.Quantity
 import physics.quantities.IntegersComprehension
 import physics.quantities.PDouble
+import physics.quantities.units.PUnit
 
 class Counter(val name: String) : Expression() {
-    override val outDomain: Quantity<PDouble> = IntegersComprehension(IntegersComprehension.InDomain.Z)
+    override val outDomain: Quantity<PDouble> = IntegersComprehension(unit = PUnit(), IntegersComprehension.InDomain.N to v("x").."x")
     override val members: Collection<Expression> = emptyList()
     override val complexity: Int = 1
 
@@ -15,7 +16,7 @@ class Counter(val name: String) : Expression() {
         assertSimplified()
     }
 
-    override fun derive(variable: String): Expression {
+    override fun differentiate(variable: String): Expression {
         return Const(0)
     }
 

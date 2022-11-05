@@ -2,7 +2,7 @@ package physics.components
 
 import ifMissing
 import physics.quantities.expressions.Equation
-import physics.rules.Formula
+import physics.rules.relations.Formula
 
 
 class StateEquation private constructor(private val equation: Equation?) {

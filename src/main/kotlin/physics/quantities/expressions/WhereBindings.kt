@@ -9,8 +9,8 @@ class WhereBindings(
         return "$block où ${bindings.toList().joinToString(", ") { (v, e) -> "$v: $e" }}"
     }
 
-    override fun derive(variable: String): Expression {
-        val derivative = super.derive(variable)
+    override fun differentiate(variable: String): Expression {
+        val derivative = super.differentiate(variable)
         val filteredBindings = bindings.filterValues { it in derivative }
         val reversedBindings = filteredBindings.map { (v, expr) -> expr to Var(v) }.toMap()
         return WhereBindings(derivative.substituteAll(reversedBindings), filteredBindings)

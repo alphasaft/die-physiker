@@ -5,7 +5,6 @@ import physics.quantities.AnyQuantity
 import physics.quantities.Quantity
 import physics.quantities.expressions.Equation
 import physics.rules.Rule
-import println
 import titlecase
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -138,7 +137,7 @@ class ComponentClass(
                     separator = newline,
                     prefix = newline,
                     postfix = if (boxes.isEmpty() && stateEquations.isEmpty()) "\n" else ""
-                ) { it.toStringWithHistory() }
+                )
             }
 
             if (boxes.isNotEmpty()) {

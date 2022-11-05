@@ -154,10 +154,6 @@ class PUnit(private val signature: UnitSignature) {
         }
     }
 
-    private fun invert(): PUnit {
-        return PUnit(signature.mapValues { (_, v) -> -v })
-    }
-
     operator fun times(other: PUnit): PUnit {
         return when {
             this.isNeutral() -> other
@@ -169,8 +165,12 @@ class PUnit(private val signature: UnitSignature) {
         }
     }
 
+    fun inv(): PUnit {
+        return PUnit(signature.mapValues { (_, v) -> -v })
+    }
+
     operator fun div(other: PUnit): PUnit {
-        return this * other.invert()
+        return this * other.inv()
     }
 
     fun pow(exponent: Double): PUnit {

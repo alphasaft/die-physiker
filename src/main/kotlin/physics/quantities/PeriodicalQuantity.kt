@@ -1,15 +1,19 @@
 package physics.quantities
 
+import physics.quantities.units.PUnit
 import kotlin.reflect.KClass
 
 class PeriodicalQuantity private constructor(
-    interval: PRealInterval,
+    interval: PDoubleInterval,
     private val period: PDouble,
-) : PRealOperand {
+) : PDoubleOperand {
+    override val unit: PUnit = period.unit
+
     companion object Factory {
-        private class AffineFunction(val a: PDouble, val b: PDouble) : Function {
+        private class AffinePFunction(val a: PDouble, val b: PDouble) : PFunction {
             override val outDomain: Quantity<PDouble> = AnyQuantity()
-            override val reciprocal: Function get() = AffineFunction(a = PDouble(1) / a, b = -b / a)
+            override val reciprocal: PFunction get() = AffinePFunction(a = PDouble(1) / a, b = -b / a)
+            override val derivative: PFunction get() = AffinePFunction(a = PDouble(0), b = a)
             override fun invoke(x: String): String = "$a$x+$b"
             override fun invoke(x: PDouble): PDouble = a * x + b
             override fun invokeExhaustively(x: Quantity<PDouble>): Quantity<PDouble> = a * x + b
@@ -19,8 +23,8 @@ class PeriodicalQuantity private constructor(
             return when (val simplifiedQuantity = quantity.simplify()) {
                 is AnyQuantity -> AnyQuantity()
                 is ImpossibleQuantity -> ImpossibleQuantity()
-                is PDouble -> IntegersComprehension(simplifiedQuantity.unit, IntegersComprehension.InDomain.Z, AffineFunction(a = period, b = simplifiedQuantity))
-                is PRealInterval -> if (simplifiedQuantity.amplitude > period) AnyQuantity() else PeriodicalQuantity(simplifiedQuantity, period)
+                is PDouble -> IntegersComprehension(simplifiedQuantity.unit, IntegersComprehension.InDomain.Z, AffinePFunction(a = period, b = simplifiedQuantity))
+                is PDoubleInterval -> if (simplifiedQuantity.amplitude > period) AnyQuantity() else PeriodicalQuantity(simplifiedQuantity, period)
                 is QuantityUnion -> simplifiedQuantity.mapItems { new(it, period) }
                 is QuantityIntersection -> simplifiedQuantity.mapItems { new(it, period) }
                 else -> AnyQuantity()
@@ -29,19 +33,17 @@ class PeriodicalQuantity private constructor(
     }
 
     override val type: KClass<PDouble> = PDouble::class
-    private val standardizedInterval: PRealInterval = interval % period
+    private val standardizedInterval: PDoubleInterval = interval % period
 
     override fun simpleIntersect(quantity: Quantity<PDouble>): Quantity<PDouble> {
         return when (val simplifiedQuantity = quantity.simplify()) {
-            is PRealInterval -> this stdIntersect simplifiedQuantity
-            is PeriodicalQuantity -> this stdIntersect simplifiedQuantity
+            is PDoubleInterval -> this simpleIntersect simplifiedQuantity
+            is PeriodicalQuantity -> this simpleIntersect simplifiedQuantity
             else -> QuantityIntersection.assertReduced(this, simplifiedQuantity)
         }
     }
 
-    // -(-0.3, 0.7, 1.7, ...)
-
-    private infix fun stdIntersect(quantity: PRealInterval): Quantity<PDouble> {
+    private infix fun simpleIntersect(quantity: PDoubleInterval): Quantity<PDouble> {
         val lb = quantity.lowerBound
         var lowerBoundOfCurrentInterval = lb - (lb % period)
         var asUnion = QuantityUnion.new<PDouble>()
@@ -52,33 +54,32 @@ class PeriodicalQuantity private constructor(
         return asUnion intersect quantity
     }
 
-    override fun plus(other: PRealOperand): Quantity<PDouble> {
+    override fun plus(other: PDoubleOperand): Quantity<PDouble> {
         return new(standardizedInterval + other, period)
     }
 
-    override fun times(other: PRealOperand): Quantity<PDouble> {
+    override fun times(other: PDoubleOperand): Quantity<PDouble> {
         if (other is PDouble) {
-            if (other.isZero()) return other
+            if (other.isZero()) return other.withUnit(other.unit*unit)
             return new(standardizedInterval * other, period*other)
         }
         return AnyQuantity()
 
     }
 
-    override fun pow(other: PRealOperand): Quantity<PDouble> {
+    override fun pow(other: PDoubleOperand): Quantity<PDouble> {
         return AnyQuantity()
     }
 
-    override fun div(other: PRealOperand): Quantity<PDouble> {
-        if (other !is PDouble) return AnyQuantity()
-        return new(standardizedInterval/other, period/other)
+    override fun inv(): Quantity<PDouble> {
+        return AnyQuantity()
     }
 
     override fun unaryMinus(): Quantity<PDouble> {
         return new(-standardizedInterval, period)
     }
 
-    private infix fun stdIntersect(quantity: PeriodicalQuantity): Quantity<PDouble> {
+    private infix fun simpleIntersect(quantity: PeriodicalQuantity): Quantity<PDouble> {
         return when {
             (period / quantity.period).isInt() -> new(this.standardizedInterval intersect quantity, period)
             (quantity.period / period).isInt() -> new(this.standardizedInterval intersect quantity, quantity.period)

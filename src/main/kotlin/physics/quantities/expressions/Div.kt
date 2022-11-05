@@ -18,8 +18,8 @@ class Div(val dividend: Expression, val divider: Expression) : Expression() {
         return if (member === dividend) {{ it * divider }} else {{ dividend / it }}
     }
 
-    override fun derive(variable: String): Expression {
-        return (dividend.derive(variable) * divider - dividend * divider.derive(variable))/divider.square()
+    override fun differentiate(variable: String): Expression {
+        return (dividend.differentiate(variable) * divider - dividend * divider.differentiate(variable))/divider.square()
     }
 
     override fun evaluateExhaustively(arguments: Args<VariableValue<*>>, counters: Map<String, Int>): Quantity<PDouble> {
@@ -35,11 +35,11 @@ class Div(val dividend: Expression, val divider: Expression) : Expression() {
     }
 
     override fun simplifyImpl(): Expression {
-        // TODO : 0/0 is simplified as 1
         val dividend = dividend.simplify()
         val divider = divider.simplify()
 
         return when {
+            dividend == Const(0) && divider == Const(0) -> Const(Double.NaN)
             dividend == divider -> Const(1)
             dividend == Const(1) -> divider.pow(Const(-1))
             divider == Const(1) -> dividend

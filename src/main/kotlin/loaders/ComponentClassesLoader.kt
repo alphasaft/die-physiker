@@ -69,8 +69,8 @@ class ComponentClassesLoader(
             abstract,
             ComponentStructure(
                 extends = bases,
-                fieldsTemplates = fields,
-                boxesTemplates = subcomponentGroups,
+                fieldsTemplates = fields.values.toList(),
+                boxesTemplates = subcomponentGroups.values.toList(),
             )
         )
     }

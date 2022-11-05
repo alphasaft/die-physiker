@@ -53,7 +53,7 @@ class Var(val name: String) : Expression() {
         return this
     }
 
-    override fun derive(variable: String): Expression {
+    override fun differentiate(variable: String): Expression {
         return if (variable == name) Const(1) else Const(0)
     }
 
